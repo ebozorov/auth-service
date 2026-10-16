@@ -46,6 +46,8 @@ function osName(platform: string, version: string) {
     case "macOS":
     case "Android":
       return major ? `${platform} ${minor !== "0" && minor ? `${major}.${minor}` : major}` : platform;
+    case "Linux":
+      return linuxDistro(navigator.userAgent) ?? platform;
     default:
       return platform;
   }
@@ -93,8 +95,26 @@ function uaOS(ua: string) {
   if (/Windows/.test(ua)) return "Windows";
   if (/Macintosh/.test(ua)) return navigator.maxTouchPoints > 1 ? "iPadOS" : "macOS";
   if (/CrOS/.test(ua)) return "ChromeOS";
-  if (/Linux/.test(ua)) return "Linux";
+  if (/Linux/.test(ua)) return linuxDistro(ua) ?? "Linux";
   return "";
+}
+
+// Brauzer distributivni bermaydi; faqat ba'zi distributivlarning o'z Firefox/Chromium
+// build'lari nomini UA'ga qo'shadi, masalan "X11; Ubuntu; Linux x86_64".
+const distros: [RegExp, string][] = [
+  [/Ubuntu/, "Ubuntu"],
+  [/Fedora/, "Fedora"],
+  [/Debian/, "Debian"],
+  [/Linux Mint|\bMint\b/, "Linux Mint"],
+  [/openSUSE/i, "openSUSE"],
+  [/Manjaro/, "Manjaro"],
+  [/Arch Linux/, "Arch Linux"],
+  [/CentOS/, "CentOS"],
+  [/Red Hat/, "Red Hat"],
+];
+
+function linuxDistro(ua: string) {
+  return distros.find(([re]) => re.test(ua))?.[1];
 }
 
 function uaBrowser(ua: string) {
