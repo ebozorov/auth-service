@@ -36,7 +36,7 @@ func NewID() int64 {
 }
 
 // ID is an id read from JSON that accepts both "123" and 123, and is written as a string:
-// ids exceed 2^53, so JavaScript would round a JSON number (docs/DECISION.md #14).
+// ids exceed 2^53, so JavaScript would round a JSON number (docs/DECISION.md #21, #22).
 // Response models that are only written use int64 with the `json:",string"` tag instead;
 // it encodes without an allocation per id.
 type ID int64

@@ -14,7 +14,7 @@ Email ro'yxatda bo'lmasa ham javob bir xil qaytadi, faqat xat yuborilmaydi.
 
 ## Endpointlar
 
-Barcha API endpointlari `/api/v1` prefiksi ostida: quyidagi jadvallarda prefiks yozilmagan, masalan `/auth/sign-in` aslida `/api/v1/auth/sign-in`. Qolgan yo'llar web UI'ga tegishli (17-qaror).
+Barcha API endpointlari `/api/v1` prefiksi ostida: quyidagi jadvallarda prefiks yozilmagan, masalan `/auth/sign-in` aslida `/api/v1/auth/sign-in`. Qolgan yo'llar web UI'ga tegishli (19 va 20-qarorlar).
 
 ### Auth
 
@@ -83,7 +83,8 @@ internal/
 web/                   web UI (React): build web/dist ga tushadi va binary ichiga embed qilinadi
 docs/
 ├── ARCHITECTURE.md    arxitektura (shu fayl)
-├── DECISION.md        arxitektura qarorlari
+├── DECISION.md        arxitektura qarorlari ro'yxati
+├── decisions/         qarorlar kategoriya bo'yicha (system, flows, api, database, models, web)
 └── openapi.json       API hujjati
 migrations/            SQL migrationlar (sxemaning manbasi)
 docker/                compose.yaml (lokal servicelar)
