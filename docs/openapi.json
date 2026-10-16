@@ -1,0 +1,851 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "auth-api",
+    "version": "0.2.0",
+    "description": "Ishxona xodimlari uchun autentifikatsiya API. Parolsiz kirish: email orqali magic link, link faqat so'rov yuborilgan qurilmada ishlaydi. Session = qurilma."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Sessions"
+    },
+    {
+      "name": "Admin",
+      "description": "Faqat `role = admin` uchun"
+    }
+  ],
+  "paths": {
+    "/auth/sign-in": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Email kiritish, magic link yuborish",
+        "description": "Email ro'yxatda bo'lsa va user `enabled` bo'lsa, emailga magic link yuboriladi. Javob har doim bir xil, shuning uchun email tizimda bor-yo'qligini bilib bo'lmaydi.\n\n`device_secret` faqat shu qurilmada saqlanadi: brauzerda `HttpOnly` cookie (`SameSite=Lax`) bo'lib o'rnatiladi, ilova yoki curl uni body'dan oladi. Link faqat shu secret bilan ishlaydi.\n\n`device` berilmasa, qurilma ma'lumoti `User-Agent` dan olinadi.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignInRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Agar email ro'yxatda bo'lsa, link yuborildi",
+            "headers": {
+              "Set-Cookie": {
+                "description": "`device_secret` (brauzer uchun)",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/auth/sign-in/link": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Magic link (brauzer)",
+        "description": "Emaildagi link shu manzilga olib boradi. `device_secret` cookie'dan olinadi.\n\nToken va secret mos kelsa: session yaratiladi, refresh token `HttpOnly`, `Secure`, `SameSite=Lax` cookie bo'lib o'rnatiladi, `device_secret` cookie'si o'chiriladi va brauzer `SIGN_IN_REDIRECT_URL` ga yo'naltiriladi. Web ilova access tokenni `POST /auth/refresh` dan oladi.\n\nMos kelmasa (boshqa qurilma, muddati o'tgan yoki ishlatilgan link), session yaratilmaydi va brauzer `SIGN_IN_REDIRECT_URL` ga xato belgisi bilan yo'naltiriladi.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "`SIGN_IN_REDIRECT_URL` ga yo'naltirish (muvaffaqiyat yoki xato belgisi bilan)",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Set-Cookie": {
+                "description": "Muvaffaqiyatda: refresh token cookie'si o'rnatiladi, `device_secret` cookie'si o'chiriladi",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Magic link (ilova, curl)",
+        "description": "Ilova link (universal/deep link) orqali ochilganda token va o'zida saqlangan `device_secret` ni yuboradi. Ikkalasi mos kelsa, shu qurilmada session yaratiladi. Link bir martalik.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignInLinkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tokenlar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Tokenlarni yangilash",
+        "description": "Yangi access va refresh token beradi. Eski refresh token bekor bo'ladi (rotation).\n\n- **Brauzer:** refresh token `HttpOnly` cookie'dan olinadi, body kerak emas. Yangi refresh token cookie'ga yoziladi va body'da qaytarilmaydi.\n- **Ilova va curl:** refresh token body'da yuboriladi va body'da qaytadi.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Yangi tokenlar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "Brauzer uchun: yangi refresh token",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Joriy sessionni tugatish",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Session tugatildi",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Refresh token cookie'sini o'chirish",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Sessionni tugatadi. Brauzerda refresh token cookie'si ham o'chiriladi."
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Joriy foydalanuvchi",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Foydalanuvchi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/sessions": {
+      "get": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Faol qurilmalar ro'yxati",
+        "description": "Session = qurilma.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sessionlar (oxirgi faollik bo'yicha tartiblangan)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Session"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Joriydan boshqa barcha qurilmalarni tugatish",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tugatilgan sessionlar soni",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TerminatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/sessions/{id}": {
+      "delete": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Bitta qurilmani tugatish",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Session tugatildi"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Userlar ro'yxati",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Userlar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "User qo'shish",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User yaratildi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/admin/users/{id}": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Userni o'zgartirish",
+        "description": "`enabled = false` qilinsa, userning barcha sessionlari tugatiladi. User o'chirilmaydi.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Yangilangan user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/admin/users/{id}/sessions": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Userning qurilmalari",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sessionlar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Session"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/admin/users/{id}/sessions/{sid}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Userning qurilmasini tugatish",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Session tugatildi"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "Xatolik",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Device": {
+        "type": "object",
+        "description": "Qurilma ma'lumoti. Client yubormasa `User-Agent` dan olinadi.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "iPhone 15"
+          },
+          "os": {
+            "type": "string",
+            "example": "iOS 18"
+          },
+          "client": {
+            "type": "string",
+            "example": "MyApp 2.4"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "client",
+              "user_agent"
+            ],
+            "readOnly": true,
+            "description": "Ma'lumot qayerdan olingan"
+          }
+        }
+      },
+      "SignInRequest": {
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "ali@example.com"
+          },
+          "device": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Device"
+              }
+            ],
+            "description": "Ixtiyoriy. Berilmasa User-Agent dan aniqlanadi."
+          }
+        }
+      },
+      "SignInResponse": {
+        "type": "object",
+        "properties": {
+          "device_secret": {
+            "type": "string",
+            "description": "Linkni shu qurilmada ishlatish uchun. Ilova saqlab qo'yadi."
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Link amal qilish muddati (soniya)",
+            "example": 600
+          }
+        }
+      },
+      "SignInLinkRequest": {
+        "type": "object",
+        "required": [
+          "token",
+          "device_secret"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Linkdagi token"
+          },
+          "device_secret": {
+            "type": "string"
+          }
+        }
+      },
+      "RefreshRequest": {
+        "type": "object",
+        "description": "Faqat ilova va curl uchun. Brauzerda refresh token cookie'dan olinadi.",
+        "properties": {
+          "refresh_token": {
+            "type": "string"
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Faqat ilova va curl uchun. Brauzerda cookie'da bo'ladi va bu yerda qaytarilmaydi."
+          },
+          "token_type": {
+            "type": "string",
+            "example": "Bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Access token muddati (soniya)",
+            "example": 900
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "example": 1001
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "ali@example.com"
+          },
+          "name": {
+            "type": "string",
+            "example": "Ali Valiyev"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "user"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "CreateUserRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "name"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "ali@example.com"
+          },
+          "name": {
+            "type": "string",
+            "example": "Ali Valiyev"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "user"
+            ],
+            "default": "user"
+          }
+        }
+      },
+      "UpdateUserRequest": {
+        "type": "object",
+        "description": "Faqat berilgan maydonlar o'zgaradi.",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "user"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "device": {
+            "$ref": "#/components/schemas/Device"
+          },
+          "started_ip": {
+            "type": "string",
+            "description": "Session boshlangan (link ochilgan) IP",
+            "example": "203.0.113.7"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Tizimga kirilgan vaqt"
+          },
+          "current_ip": {
+            "type": "string",
+            "description": "Oxirgi so'rov IP'si",
+            "example": "198.51.100.4"
+          },
+          "current_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Oxirgi faollik vaqti"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "current": {
+            "type": "boolean",
+            "description": "So'rov yuborilgan session"
+          }
+        }
+      },
+      "TerminatedResponse": {
+        "type": "object",
+        "properties": {
+          "terminated": {
+            "type": "integer",
+            "example": 2
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "invalid token"
+          }
+        }
+      }
+    }
+  }
+}

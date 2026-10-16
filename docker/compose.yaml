@@ -1,0 +1,35 @@
+name: auth-api
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: auth-api-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-auth}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-auth}
+      POSTGRES_DB: ${DB_NAME:-auth}
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  # Lokal SMTP: xatlarni ushlab oladi, UI: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.31
+    container_name: auth-api-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  pgdata:

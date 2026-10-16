@@ -1,0 +1,72 @@
+# Build natijalari (make build, go test -c)
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Go test va profiling fayllari
+*.out
+coverage.*
+*.prof
+*.pprof
+
+# Go workspace (lokal sozlama)
+go.work
+go.work.sum
+
+# Maxfiy env fayllar va RSA kalitlar (.env.local umumiy lokal sozlama, repoda qoladi)
+.env
+.env.*
+!.env.local
+/certs/
+
+# Swagger UI: make swagger-ui yuklaydi, swagger-initializer.js bizniki
+/swagger-ui/*
+!/swagger-ui/swagger-initializer.js
+
+# Runtime loglar
+/logs/
+*.log
+
+# JetBrains (GoLand, IntelliJ)
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Vim / Neovim
+*.swp
+*.swo
+*~
+Session.vim
+
+# Emacs
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Zed / Fleet
+.zed/
+.fleet/
+
+# Claude Code: shaxsiy sozlamalar (settings.json umumiy qoladi)
+.claude/settings.local.json
+
+# OS tizim fayllari (macOS, Windows, Linux)
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+.directory
+
+# Vaqtinchalik fayllar (air hot-reload va boshqalar)
+tmp/
+*.tmp
