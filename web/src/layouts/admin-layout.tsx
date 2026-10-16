@@ -74,7 +74,7 @@ export function AdminLayout() {
         </nav>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <Navbar user={me.data} onToggleSidebar={toggleSidebar} />
+        <Navbar user={me.data} sidebarOpen={!collapsed} onToggleSidebar={toggleSidebar} />
         <main className="flex-1 p-8">
           <Outlet />
         </main>

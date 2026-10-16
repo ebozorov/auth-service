@@ -8,7 +8,8 @@ const uz = {
   "common.close": "Yopish",
   "common.cancel": "Bekor qilish",
 
-  "navbar.sidebar": "Panelni ochish/yopish",
+  "navbar.sidebarOpen": "Panelni ochish",
+  "navbar.sidebarClose": "Panelni yopish",
   "navbar.language": "Til",
   "navbar.theme": "Mavzu",
   "navbar.profile": "Profil",
@@ -69,7 +70,8 @@ const ru: Record<MessageKey, string> = {
   "common.close": "Закрыть",
   "common.cancel": "Отмена",
 
-  "navbar.sidebar": "Открыть/закрыть панель",
+  "navbar.sidebarOpen": "Открыть панель",
+  "navbar.sidebarClose": "Скрыть панель",
   "navbar.language": "Язык",
   "navbar.theme": "Тема",
   "navbar.profile": "Профиль",
@@ -128,7 +130,8 @@ const en: Record<MessageKey, string> = {
   "common.close": "Close",
   "common.cancel": "Cancel",
 
-  "navbar.sidebar": "Toggle sidebar",
+  "navbar.sidebarOpen": "Open sidebar",
+  "navbar.sidebarClose": "Close sidebar",
   "navbar.language": "Language",
   "navbar.theme": "Theme",
   "navbar.profile": "Profile",

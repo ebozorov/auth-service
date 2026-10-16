@@ -1,4 +1,4 @@
-import { Languages, LogOut, Monitor, Moon, PanelLeft, Sun } from "lucide-react";
+import { Languages, LogOut, Monitor, Moon, Sun } from "lucide-react";
 import { useMatches, useNavigate } from "react-router";
 import { logout, type Schemas } from "@/api/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { locales, useI18n, type Locale } from "@/lib/i18n";
 import { useTheme, type Theme } from "@/lib/theme";
+import { cn } from "@/lib/utils";
 import type { RouteHandle } from "@/router";
 
 export function LanguageMenu() {
@@ -115,16 +116,58 @@ function ProfileMenu({ user }: { user: Schemas["User"] }) {
   );
 }
 
-export function Navbar({ user, onToggleSidebar }: { user: Schemas["User"]; onToggleSidebar: () => void }) {
+// Panel ochiq: chap ustun to'la, strelka chapga (yopish). Yopiq: ustun bo'sh, strelka o'ngga (ochish).
+function SidebarToggleIcon({ open }: { open: boolean }) {
+  const animated = "transition-[scale,rotate,opacity] duration-300 ease-out [transform-box:fill-box] motion-reduce:transition-none";
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path
+        d="M5 3h4v18H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
+        fill="currentColor"
+        stroke="none"
+        className={cn(animated, "origin-left", open ? "scale-x-100 opacity-30" : "scale-x-0 opacity-0")}
+      />
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+      <path d="M9 3v18" />
+      <path d="m16 15-3-3 3-3" className={cn(animated, "origin-center", !open && "rotate-180")} />
+    </svg>
+  );
+}
+
+export function Navbar({
+  user,
+  sidebarOpen,
+  onToggleSidebar,
+}: {
+  user: Schemas["User"];
+  sidebarOpen: boolean;
+  onToggleSidebar: () => void;
+}) {
   const { t } = useI18n();
   const title = useMatches()
     .map((m) => (m.handle as RouteHandle | undefined)?.title)
     .filter(Boolean)
     .at(-1);
+  const label = sidebarOpen ? t("navbar.sidebarClose") : t("navbar.sidebarOpen");
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center gap-1 border-b bg-background/80 px-4 backdrop-blur">
-      <Button variant="ghost" size="icon" aria-label={t("navbar.sidebar")} onClick={onToggleSidebar}>
-        <PanelLeft />
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label={label}
+        title={label}
+        aria-expanded={sidebarOpen}
+        onClick={onToggleSidebar}
+      >
+        <SidebarToggleIcon open={sidebarOpen} />
       </Button>
       <h1 className="mr-auto ml-1 truncate text-base font-semibold">{title && t(title)}</h1>
       <LanguageMenu />
