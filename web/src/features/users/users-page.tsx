@@ -1,10 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { createColumnHelper } from "@tanstack/react-table";
-import { useMemo } from "react";
+import { MonitorSmartphone } from "lucide-react";
+import { useMemo, useState } from "react";
 import { api, type Schemas } from "@/api/client";
 import { DataTable } from "@/components/data-table/data-table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
+import { UserSessionsSheet } from "./user-sessions-sheet";
 
 type User = Schemas["User"];
 
@@ -12,6 +15,7 @@ const col = createColumnHelper<User>();
 
 export function UsersPage() {
   const { locale, t } = useI18n();
+  const [sessionsOf, setSessionsOf] = useState<User | null>(null);
   const users = useQuery({
     queryKey: ["admin", "users"],
     queryFn: () => api<User[]>("/admin/users"),
@@ -38,6 +42,17 @@ export function UsersPage() {
         header: t("users.createdAt"),
         cell: (c) => (c.getValue() ? new Date(c.getValue()!).toLocaleDateString(locale) : ""),
       }),
+      col.display({
+        id: "actions",
+        cell: (c) => (
+          <div className="flex justify-end">
+            <Button variant="ghost" size="sm" onClick={() => setSessionsOf(c.row.original)}>
+              <MonitorSmartphone />
+              {t("users.sessions")}
+            </Button>
+          </div>
+        ),
+      }),
     ],
     [locale, t],
   );
@@ -49,6 +64,7 @@ export function UsersPage() {
       ) : (
         <DataTable columns={columns} data={users.data ?? []} searchPlaceholder={t("users.search")} />
       )}
+      <UserSessionsSheet user={sessionsOf} onClose={() => setSessionsOf(null)} />
     </div>
   );
 }
