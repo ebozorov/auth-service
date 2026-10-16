@@ -18,6 +18,7 @@ import (
 	"auth-service/web"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 )
@@ -100,6 +101,8 @@ func main() {
 	app.Use(recover.New(), logger.New(logger.Config{
 		Format: "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | user=${locals:userID} sid=${locals:sessionID} | ${error}\n",
 	}))
+	// gzip/br/deflate by Accept-Encoding; JSON shrinks ~15x.
+	app.Use(compress.New())
 
 	api := app.Group(internal.APIPrefix)
 	if err := home.RegisterRoutes(app, api, homeHandler); err != nil {
