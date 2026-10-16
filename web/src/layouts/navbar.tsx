@@ -1,4 +1,4 @@
-import { Languages, LogOut, Monitor, Moon, Sun } from "lucide-react";
+import { Languages, LogOut, Monitor, Moon, PanelLeft, Sun } from "lucide-react";
 import { useNavigate } from "react-router";
 import { logout, type Schemas } from "@/api/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -114,9 +114,13 @@ function ProfileMenu({ user }: { user: Schemas["User"] }) {
   );
 }
 
-export function Navbar({ user }: { user: Schemas["User"] }) {
+export function Navbar({ user, onToggleSidebar }: { user: Schemas["User"]; onToggleSidebar: () => void }) {
+  const { t } = useI18n();
   return (
-    <header className="sticky top-0 z-10 flex h-14 items-center justify-end gap-1 border-b bg-background/80 px-4 backdrop-blur">
+    <header className="sticky top-0 z-10 flex h-14 items-center gap-1 border-b bg-background/80 px-4 backdrop-blur">
+      <Button variant="ghost" size="icon" className="mr-auto" aria-label={t("navbar.sidebar")} onClick={onToggleSidebar}>
+        <PanelLeft />
+      </Button>
       <LanguageMenu />
       <ThemeMenu />
       <div className="ml-2">

@@ -6,6 +6,7 @@ const uz = {
   "nav.settings": "Sozlamalar",
   "common.comingSoon": "Bu bo'lim keyinroq qo'shiladi.",
 
+  "navbar.sidebar": "Panelni ochish/yopish",
   "navbar.language": "Til",
   "navbar.theme": "Mavzu",
   "navbar.profile": "Profil",
@@ -42,6 +43,7 @@ const ru: Record<MessageKey, string> = {
   "nav.settings": "Настройки",
   "common.comingSoon": "Этот раздел появится позже.",
 
+  "navbar.sidebar": "Открыть/закрыть панель",
   "navbar.language": "Язык",
   "navbar.theme": "Тема",
   "navbar.profile": "Профиль",
@@ -76,6 +78,7 @@ const en: Record<MessageKey, string> = {
   "nav.settings": "Settings",
   "common.comingSoon": "This section is coming later.",
 
+  "navbar.sidebar": "Toggle sidebar",
   "navbar.language": "Language",
   "navbar.theme": "Theme",
   "navbar.profile": "Profile",
