@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
 )
 
 const (
@@ -98,10 +100,18 @@ func main() {
 		ProxyHeader:           proxyHeader(cfg.TrustProxy),
 		DisableStartupMessage: true,
 	})
-	// user and sid come from the auth middleware's locals; empty on public routes.
-	app.Use(recover.New(), logger.New(logger.Config{
-		Format:     "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | user=${locals:userID} sid=${locals:sessionID} | ${error}\n",
-		CustomTags: map[string]logger.LogFunc{logger.TagMethod: logMethod},
+	app.Use(recover.New())
+	// rid ties the request log to other logs of the same request; requestid must run before logger.
+	// An X-Request-ID from upstream is kept; otherwise a Sonyflake id, time-ordered like the other ids.
+	app.Use(requestid.New(requestid.Config{Generator: newRequestID}))
+	app.Use(logger.New(logger.Config{
+		Format: "${time} | ${latency} | ${ip} | ${locals:requestid} | ${status} | ${method} | ${path} | ${error}\n",
+		CustomTags: map[string]logger.LogFunc{
+			logger.TagMethod: logMethod,
+			logger.TagIP:     logIP,
+			logger.TagPath:   logPath,
+			logger.TagError:  logErrorOrSize,
+		},
 	}))
 	// gzip/br/deflate by Accept-Encoding; JSON shrinks ~15x.
 	app.Use(compress.New())
@@ -168,12 +178,67 @@ func cleanup(sessions *session.Service, authHandler *auth.Handler) {
 	}
 }
 
+func newRequestID() string {
+	return strconv.FormatInt(internal.NewID(), 10)
+}
+
 // logMethod writes the method padded to 7 characters (OPTIONS is the longest), so the
 // columns after it line up, like ${status} and ${latency} do. Colors match Fiber's own
 // ${method}; Fiber turns them on because Output is the default os.Stdout.
 func logMethod(output logger.Buffer, c *fiber.Ctx, _ *logger.Data, _ string) (int, error) {
 	colors := c.App().Config().ColorScheme
 	return fmt.Fprintf(output, "%s%-7s%s", methodColor(c.Method(), colors), c.Method(), colors.Reset)
+}
+
+// logIP writes the client IP padded to 15 characters, the longest IPv4 address, so the
+// columns after it line up. IPv6 addresses are longer and push the line.
+func logIP(output logger.Buffer, c *fiber.Ctx, _ *logger.Data, _ string) (int, error) {
+	return fmt.Fprintf(output, "%-15s", c.IP())
+}
+
+// logPath writes the path padded to 36 characters, enough for most API paths.
+// Longer ones (e.g. /api/v1/admin/users/{id}/sessions/{sid}) push the line; they are not cut.
+func logPath(output logger.Buffer, c *fiber.Ctx, _ *logger.Data, _ string) (int, error) {
+	return fmt.Fprintf(output, "%-36s", c.Path())
+}
+
+// logErrorOrSize writes the error in red like Fiber's ${error}; on success it writes the
+// response body size instead of "-", to compare requests. The logger runs before compress,
+// so it is the compressed size, the bytes that went over the wire.
+func logErrorOrSize(output logger.Buffer, c *fiber.Ctx, data *logger.Data, _ string) (int, error) {
+	if data.ChainErr != nil {
+		colors := c.App().Config().ColorScheme
+		return fmt.Fprintf(output, "%s%s%s", colors.Red, data.ChainErr.Error(), colors.Reset)
+	}
+	return output.WriteString(formatSize(responseSize(c)))
+}
+
+// responseSize is the body size that is actually sent; -1 when it is unknown.
+func responseSize(c *fiber.Ctx) int {
+	res := c.Response()
+	status := res.StatusCode()
+	// fasthttp drops the body of these, e.g. the "No Content" text that SendStatus(204) sets.
+	if c.Method() == fiber.MethodHead || status < 200 || status == fiber.StatusNoContent || status == fiber.StatusNotModified {
+		return 0
+	}
+	if res.IsBodyStream() {
+		// Static files are streamed; Content-Length is -1 when the size is unknown (chunked).
+		return res.Header.ContentLength()
+	}
+	return len(res.Body())
+}
+
+func formatSize(n int) string {
+	switch {
+	case n < 0:
+		return "stream"
+	case n < 1<<10:
+		return fmt.Sprintf("%dB", n)
+	case n < 1<<20:
+		return fmt.Sprintf("%.1fKB", float64(n)/(1<<10))
+	default:
+		return fmt.Sprintf("%.1fMB", float64(n)/(1<<20))
+	}
 }
 
 // methodColor is a copy of Fiber's unexported logger.methodColor.
