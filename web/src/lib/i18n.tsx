@@ -6,6 +6,8 @@ const uz = {
   "nav.settings": "Sozlamalar",
   "common.comingSoon": "Bu bo'lim keyinroq qo'shiladi.",
   "common.close": "Yopish",
+  "common.copy": "Nusxalash",
+  "common.copied": "Nusxalandi",
   "common.cancel": "Bekor qilish",
 
   "navbar.sidebarOpen": "Panelni ochish",
@@ -47,6 +49,7 @@ const uz = {
   "common.save": "Saqlash",
 
   "sessions.title": "Sessionlar",
+  "sessions.id": "ID",
   "sessions.empty": "Faol session yo'q",
   "sessions.current": "Joriy",
   "sessions.unknownDevice": "Noma'lum qurilma",
@@ -68,6 +71,8 @@ const ru: Record<MessageKey, string> = {
   "nav.settings": "Настройки",
   "common.comingSoon": "Этот раздел появится позже.",
   "common.close": "Закрыть",
+  "common.copy": "Копировать",
+  "common.copied": "Скопировано",
   "common.cancel": "Отмена",
 
   "navbar.sidebarOpen": "Открыть панель",
@@ -109,6 +114,7 @@ const ru: Record<MessageKey, string> = {
   "common.save": "Сохранить",
 
   "sessions.title": "Сессии",
+  "sessions.id": "ID",
   "sessions.empty": "Нет активных сессий",
   "sessions.current": "Текущая",
   "sessions.unknownDevice": "Неизвестное устройство",
@@ -128,6 +134,8 @@ const en: Record<MessageKey, string> = {
   "nav.settings": "Settings",
   "common.comingSoon": "This section is coming later.",
   "common.close": "Close",
+  "common.copy": "Copy",
+  "common.copied": "Copied",
   "common.cancel": "Cancel",
 
   "navbar.sidebarOpen": "Open sidebar",
@@ -169,6 +177,7 @@ const en: Record<MessageKey, string> = {
   "common.save": "Save",
 
   "sessions.title": "Sessions",
+  "sessions.id": "ID",
   "sessions.empty": "No active sessions",
   "sessions.current": "Current",
   "sessions.unknownDevice": "Unknown device",

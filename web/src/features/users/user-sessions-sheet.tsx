@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Monitor } from "lucide-react";
+import { Check, Copy, Monitor } from "lucide-react";
 import { useState } from "react";
 import { api, type Schemas } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
@@ -94,7 +94,12 @@ function SessionCard({
         </div>
       </div>
 
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
+      <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-1 text-xs">
+        <dt className="text-muted-foreground">{t("sessions.id")}</dt>
+        <dd className="flex min-w-0 items-center gap-1">
+          <span className="truncate font-mono select-all">{s.id}</span>
+          <CopyButton value={s.id ?? ""} />
+        </dd>
         <dt className="text-muted-foreground">{t("sessions.startedAt")}</dt>
         <dd>
           {date(s.started_at)} · {s.started_ip}
@@ -127,5 +132,26 @@ function SessionCard({
         </div>
       )}
     </div>
+  );
+}
+
+// Session ID audit uchun: loglarda shu ID bo'yicha qidiriladi.
+function CopyButton({ value }: { value: string }) {
+  const { t } = useI18n();
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  }
+
+  const label = copied ? t("common.copied") : t("common.copy");
+  return (
+    <Button variant="ghost" size="icon-xs" aria-label={label} title={label} onClick={copy}>
+      {copied ? <Check /> : <Copy />}
+    </Button>
   );
 }
