@@ -1,0 +1,23 @@
+# air: make dev da Go serverni o'zgarishda qayta yig'ib, qayta ishga tushiradi.
+# Kuzatiladi: Go kodi, migrationlar va docs/openapi.json (server ishga tushganda o'qiladi).
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/auth-service ./cmd/server"
+  entrypoint = ["./tmp/auth-service"]
+  include_dir = ["cmd", "internal", "web", "migrations", "docs"]
+  include_ext = ["go", "sql", "json"]
+  # web/src ni Vite o'zi kuzatadi
+  exclude_dir = ["web/src", "web/public", "web/dist", "web/node_modules"]
+  exclude_regex = ["_test\\.go$"]
+  delay = 300
+  # Server SIGINT da joriy so'rovlarni tugatib to'xtaydi
+  send_interrupt = true
+  kill_delay = "5s"
+  # Build xato bo'lsa, eski server ishlashda davom etadi
+  stop_on_error = false
+  log = "build-errors.log"
+
+[misc]
+  clean_on_exit = true

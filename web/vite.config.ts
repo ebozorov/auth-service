@@ -12,6 +12,9 @@ export default defineConfig({
     alias: { "@": path.resolve(import.meta.dirname, "src") },
   },
   server: {
+    // make dev emaildagi linkni shu portga yo'naltiradi, port band bo'lsa boshqasiga o'tmasin
+    port: 5173,
+    strictPort: true,
     proxy: {
       "/api": api,
       "/.well-known": api,

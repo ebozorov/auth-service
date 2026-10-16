@@ -16,6 +16,9 @@ KEYS_DIR    := $(dir $(PRIVATE_KEY))
 
 COMPOSE_FILE := docker/compose.yaml
 
+# Vite dev server manzili (web/vite.config.ts dagi port bilan bir xil)
+WEB_DEV_URL := http://localhost:5173
+
 SWAGGER_UI_VERSION   := 5.33.0
 SWAGGER_UI_INTEGRITY := sha512-wpdK+m6BU5yj6pmUdMskZVTSWYG4DLglAx3sIhylloY37i8O37IrH+YEpqdXNfpaTGxILRBFzUqLF2jKqbfI7A==
 SWAGGER_UI_DIR       := swagger-ui
@@ -23,13 +26,26 @@ SWAGGER_UI_FILES     := index.html index.css swagger-ui.css swagger-ui-bundle.js
 
 RUNNING := [ -f $(PID_FILE) ] && kill -0 $$(cat $(PID_FILE)) 2>/dev/null
 
-.PHONY: build start stop reload status services-up services-down services-status keys swagger-ui web-install web-dev web-build web-types test
+.PHONY: build dev start stop reload status services-up services-down services-status keys swagger-ui web-install web-dev web-build web-types test
 
 # web/dist binary ichiga embed qilinadi, shuning uchun avval web build bo'ladi
 build: web-build
 	go build -o $(BIN) ./cmd/server
 
 keys: $(PRIVATE_KEY)
+
+# Live rejim: Go server air orqali (.air.toml, Go kodi o'zgarsa qayta ishga tushadi) va
+# Vite dev server (HMR). Web $(WEB_DEV_URL) dan ochiladi, emaildagi link ham shu yerga keladi
+# (Vite /api ni Go serverga uzatadi). Ctrl+C ikkalasini to'xtatadi.
+dev: keys web/dist/index.html
+	@if $(RUNNING); then echo "auth-service fonda ishlayapti, avval: make stop"; exit 1; fi
+	@PUBLIC_URL=$(WEB_DEV_URL) go tool -modfile=tools/go.mod air & pid=$$!; \
+	trap 'kill $$pid 2>/dev/null; wait $$pid' EXIT INT TERM; \
+	cd web && npm run dev
+
+# web/dist binary ichiga embed qilinadi, u bo'lmasa go build ishlamaydi
+web/dist/index.html:
+	$(MAKE) --no-print-directory web-build
 
 # Web (web/): React SPA, build natijasi web/dist ga tushadi va binary ichiga embed qilinadi
 web-install:

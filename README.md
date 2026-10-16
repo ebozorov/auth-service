@@ -53,6 +53,7 @@ Server hech qanday env faylni o'zi o'qimaydi. Lokal rejimda `.env.local` ni `mak
 | Buyruq | Tavsif |
 |---|---|
 | `make build` | web UI va `bin/auth-service` binary'ni yig'ish |
+| `make dev` | live rejim: web http://localhost:5173. Web o'zgarishlari darhol ko'rinadi (Vite), Go kodi o'zgarsa server qayta ishga tushadi (air, `.air.toml`). Emaildagi link ham 5173 ga keladi. Ctrl+C bilan to'xtaydi |
 | `make start` | build, kalit yaratish va serverni fonda ishga tushirish (log: `logs/auth-service.log`) |
 | `make stop` / `make status` | serverni to'xtatish / holatini ko'rish |
 | `make reload` | graceful restart: joriy so'rovlar tugaydi, server yangi env bilan qayta ishga tushadi |
