@@ -41,7 +41,7 @@ function SessionList({ user }: { user: User }) {
     queryFn: () => api<Session[]>(`/admin/users/${user.id}/sessions`),
   });
   const terminate = useMutation({
-    mutationFn: (sid: number) => api<void>(`/admin/users/${user.id}/sessions/${sid}`, { method: "DELETE" }),
+    mutationFn: (sid: string) => api<void>(`/admin/users/${user.id}/sessions/${sid}`, { method: "DELETE" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey }),
   });
 

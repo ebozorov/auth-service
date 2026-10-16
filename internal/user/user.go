@@ -24,7 +24,7 @@ var (
 // User is a company employee. Users are added in advance by an admin;
 // there is no self sign-up (docs/DECISION.md #1).
 type User struct {
-	ID        int64      `json:"id"`
+	ID        int64      `json:"id,string"`
 	Email     string     `json:"email"`
 	Name      string     `json:"name"`
 	Role      string     `json:"role"`

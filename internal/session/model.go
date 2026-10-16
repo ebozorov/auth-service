@@ -39,7 +39,7 @@ func EndedBy(reason string, userID, sessionID int64) Ended {
 
 // Response is a session as shown in the device list.
 type Response struct {
-	ID        int64     `json:"id"`
+	ID        int64     `json:"id,string"`
 	Device    Device    `json:"device"`
 	StartedIP string    `json:"started_ip"`
 	StartedAt time.Time `json:"started_at"`

@@ -12,13 +12,15 @@ import (
 	"strconv"
 	"time"
 
+	"auth-service/internal"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
-// Claims of an access token: sub is the user id, sid the session id.
+// Claims of an access token: sub is the user id, sid the session id (both strings).
 type Claims struct {
-	SessionID int64 `json:"sid"`
+	SessionID internal.ID `json:"sid"`
 	jwt.RegisteredClaims
 }
 
@@ -72,7 +74,7 @@ func (t *TokenManager) Issuer() string           { return t.issuer }
 func (t *TokenManager) IssueAccess(userID, sessionID int64) (string, error) {
 	now := time.Now()
 	claims := Claims{
-		SessionID: sessionID,
+		SessionID: internal.ID(sessionID),
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    t.issuer,
 			Subject:   strconv.FormatInt(userID, 10),

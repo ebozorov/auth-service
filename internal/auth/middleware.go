@@ -28,7 +28,7 @@ func (h *Handler) RequireAuth(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
 	}
 
-	sess, err := h.sessions.FindActive(claims.SessionID, userID)
+	sess, err := h.sessions.FindActive(int64(claims.SessionID), userID)
 	if errors.Is(err, session.ErrNotFound) {
 		return fiber.NewError(fiber.StatusUnauthorized, "session terminated")
 	}

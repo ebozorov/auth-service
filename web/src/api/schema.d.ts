@@ -336,7 +336,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    id: number;
+                    id: string;
                 };
                 cookie?: never;
             };
@@ -446,7 +446,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    id: number;
+                    id: string;
                 };
                 cookie?: never;
             };
@@ -486,7 +486,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    id: number;
+                    id: string;
                 };
                 cookie?: never;
             };
@@ -530,8 +530,8 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    id: number;
-                    sid: number;
+                    id: string;
+                    sid: string;
                 };
                 cookie?: never;
             };
@@ -614,9 +614,10 @@ export interface components {
         User: {
             /**
              * Format: int64
+             * @description 64 bitli Sonyflake ID. JSON'da string: qiymat 2^53 dan katta, JavaScript son sifatida yaxlitlab yuboradi.
              * @example 1001
              */
-            id?: number;
+            id?: string;
             /**
              * Format: email
              * @example ali@example.com
@@ -654,8 +655,11 @@ export interface components {
             enabled?: boolean;
         };
         Session: {
-            /** Format: int64 */
-            id?: number;
+            /**
+             * Format: int64
+             * @description 64 bitli Sonyflake ID. JSON'da string: qiymat 2^53 dan katta, JavaScript son sifatida yaxlitlab yuboradi.
+             */
+            id?: string;
             device?: components["schemas"]["Device"];
             /**
              * @description Session boshlangan (link ochilgan) IP

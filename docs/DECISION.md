@@ -134,6 +134,10 @@ claude.ai'dagi kabi: link so'rov yuborilgan brauzerda ochilsa, user avtomatik ti
 
 - Machine ID podning IP manzilidan olinadi. Kubernetes'da har bir pod klaster ichida o'z IP'siga ega, shuning uchun ID'lar butun klaster uchun noyob bo'ladi.
 - Shart: pod tarmog'i (pod CIDR) `/16` dan katta bo'lmasligi kerak. Aks holda ikki podning IP oxirgi 16 biti bir xil chiqib qolishi mumkin. Klaster sozlanayotganda shu tekshiriladi.
+- API'da (JSON javoblar va JWT `sid`) ID **string** bo'lib yuboriladi: `"id": "41784020480034629"`. Qiymat 2^53 dan katta, JavaScript JSON sonni `double` ga o'girib yaxlitlaydi (`…629` → `…630`). Serverda ID `int64` bo'lib qoladi.
+  - Faqat yoziladigan javob modellarida `int64` + `json:",string"` tegi (ortiqcha allocation yo'q).
+  - JSON'dan o'qiladigan joylarda `internal.ID`: `"123"` ni ham, `123` ni ham qabul qiladi (masalan, `sid` son bo'lgan eski tokenlar).
+  - Bazadagi JSON (`ended_sessions.ended`) o'zgarmaydi: u API'ga chiqmaydi, Postgres sonni aniq saqlaydi.
 - Server har soatda muddati o'tgan sessionlarni `ended_sessions` ga ko'chiradi (`ended.reason = 'expired'`) va ishlatilmagan eski signin so'rovlarini o'chiradi (16-qaror).
 
 ## 15. Rejimlar: dev, test va prod
