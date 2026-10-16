@@ -124,7 +124,8 @@ func main() {
 
 	base := cfg.BaseURL()
 	log.Printf("%s %s (%s) ishlayapti: %s", appName, appVersion, cfg.Env, base)
-	log.Printf("web: %s/", base)
+	// make dev: PUBLIC_URL is the Vite dev server, the embedded web/dist on base is stale there.
+	log.Printf("web: %s/", cfg.PublicURL)
 	log.Printf("api: %s%s/", base, internal.APIPrefix)
 	if cfg.SwaggerUI {
 		log.Printf("swagger ui: %s/swagger-ui/", base)
