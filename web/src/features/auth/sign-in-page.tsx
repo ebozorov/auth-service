@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { detectDevice } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 
 // device_secret HttpOnly cookie bo'lib keladi, magic link faqat shu brauzerda ishlaydi.
-async function signIn(body: Schemas["SignInRequest"]) {
+// Qurilma ma'lumoti brauzerning o'zidan olinadi: server User-Agent'dan aniqroq bilolmaydi.
+async function signIn(email: string) {
+  const body: Schemas["SignInRequest"] = { email, device: await detectDevice() };
   const res = await fetch(`${API_PREFIX}/auth/sign-in`, {
     method: "POST",
     credentials: "include",
@@ -29,7 +32,7 @@ export function SignInPage() {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
-    mutation.mutate({ email });
+    mutation.mutate(email);
   }
 
   if (mutation.isSuccess) {
