@@ -218,6 +218,14 @@ auth-service o'z web UI'si bilan birga keladi (Keycloak kabi): login sahifalari 
 - `/.well-known/*` prefikssiz: discovery issuer manzili yonida bo'lishi kerak (OpenID standarti). `/swagger-ui/` ham prefikssiz, u API emas.
 - Web: React, Vite, Tailwind va shadcn/ui. `web/dist` `embed` orqali binary ichiga kiradi, Node faqat build vaqtida kerak.
 
+## 18. Dashboard: hamma uchun, ma'lumotlar materialized view'dan
+
+- Tizimga kirgandan keyin birinchi sahifa dashboard (`/`). Chap paneldagi loyiha nomi ham shu yerga qaytaradi.
+- Dashboard **hamma uchun**, faqat admin uchun emas: tizimdan ishxona xodimlari foydalanadi va tizimdagi umumiy kartinani ko'rish hammaga teng ochiq. Shuning uchun dashboard'ga faqat har bir xodim ko'rishi mumkin bo'lgan ma'lumot chiqadi. Boshqa userlarning shaxsiy ma'lumotlari (email, IP, qurilmalar) admin bo'limlarida qoladi.
+- Dashboard'ga chiqadigan ma'lumotlar **materialized view** qilinadi. Maqsad: dashboard tez ochilishi va kutib qolmasligi. Hisob-kitob (sanash, guruhlash) so'rov paytida emas, oldindan bajariladi. Dashboard so'rovi tayyor qatorlarni o'qiydi, shuning uchun uning tezligi jadvallar o'sishiga bog'liq emas.
+- View'lar fonda yangilanadi: `REFRESH MATERIALIZED VIEW CONCURRENTLY`. `CONCURRENTLY` yangilanish paytida o'qishni to'xtatmaydi, buning uchun har bir view'da `UNIQUE` indeks bo'lishi kerak.
+- Ma'lumot yangilanishlar orasida biroz eskirgan bo'ladi. Dashboard uchun bu maqbul, va dashboard ma'lumot qachon yangilanganini ko'rsatadi.
+
 ## Jadvallar
 
 | Jadval | Vazifasi |
@@ -229,5 +237,5 @@ auth-service o'z web UI'si bilan birga keladi (Keycloak kabi): login sahifalari 
 
 ## Ochiq savollar
 
-- Sonyflake ID 63 bitli, JavaScript esa faqat 53 bitgacha aniq o'qiydi. JSON javoblarda ID qanday beriladi: string sifatida (`"id": "123..."`) yoki son sifatida qoldiriladi?
+- Dashboard view'lari qancha vaqtda bir yangilanadi va buni nima bajaradi (server ichidagi ticker yoki `pg_cron`)? Prod'da bir nechta pod bo'lsa, yangilashni faqat bittasi bajarishi kerak.
 - Prod Kubernetes'da ishlaydi. Qolgan tafsilotlar (qaysi SMTP server, ingress, secretlar) hali aniqlanmagan.
