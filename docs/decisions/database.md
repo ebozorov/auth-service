@@ -10,6 +10,12 @@ Jadvallar, ustunlar va view'lar. Sxemaning manbasi: `migrations/`. Barcha qarorl
 | `signin_requests` | kutilayotgan magic link so'rovlari va qurilma ma'lumoti |
 | `sessions` | faol sessionlar = qurilmalar |
 | `ended_sessions` | tugagan sessionlar arxivi: session ma'lumoti va qachon, nima uchun, kim tomonidan tugatilgani |
+| `resources` | permission himoya qiladigan narsalar: `user`, `role`, ... (24-qaror) |
+| `actions` | amallar, bir belgili kalit: `c`, `r`, `u`, `d` (24-qaror) |
+| `permissions` | bitta resursdagi amallar to'plami: `user:crud` (24-qaror) |
+| `roles` | rollar: permissionlar to'plami (24-qaror) |
+| `role_permissions` | rol ↔ permission (24-qaror) |
+| `user_roles` | user ↔ rol (24-qaror) |
 
 ## 5. Session = device (Telegram kabi)
 
@@ -55,6 +61,38 @@ Ma'lumot jadvaldan jadvalga ko'chib o'tadi. Har bir bosqichda kerakli ma'lumot k
 - View'lar fonda yangilanadi: `REFRESH MATERIALIZED VIEW CONCURRENTLY`. `CONCURRENTLY` yangilanish paytida o'qishni to'xtatmaydi, buning uchun har bir view'da `UNIQUE` indeks bo'lishi kerak.
 - Ma'lumot yangilanishlar orasida biroz eskirgan bo'ladi. Dashboard uchun bu maqbul, va dashboard ma'lumot qachon yangilanganini ko'rsatadi.
 
+## 24. Rollar va permissionlar
+
+Qaysi rolga qanday permission berilganini belgilaydi. Userning permissionlari access token'da `permissions` claim'i bo'lib boradi. Migratsiyalar: `000002_permissions`, `000003_roles`.
+
+- **Resurs** (`resources`) — permission himoya qiladigan narsa: `user`, `role`, keyinchalik `order`, `payment`. **Amal** (`actions`) — resurs bilan nima qilish mumkinligi. Amal kaliti bitta belgi (`a-z`, `0-9`): `c` create, `r` read, `u` update, `d` delete.
+- **Permission** — bitta resursdagi amallar **to'plami**. Kaliti `resurs:amallar`, masalan `user:r` ("Userlarni ko'rish") yoki `user:crud` ("Userlarni boshqarish"). Har bir permissionning `name` va `description` i bor.
+- Amallar kalitda `actions.sort_order` tartibida va bir martadan yoziladi (`crud`, `cdru` emas). Shunda bitta to'plamning faqat bitta yozilishi bo'ladi. Buni trigger tekshiradi: noma'lum harf, takror harf va noto'g'ri tartib rad etiladi. `key = resource || ':' || actions` ni `CHECK` tekshiradi.
+- `actions` qatorlari faqat qo'shiladi: `key` va `sort_order` o'zgarmaydi, qator o'chirilmaydi (trigger). Aks holda mavjud permission kalitlari buziladi. `name` va `description` o'zgarishi mumkin.
+- `resources`, `actions` va `permissions` ni **faqat migratsiya** to'ldiradi: permissionni servis kodi tekshiradi, shuning uchun uni dasturchi qo'shadi. Admin **rollarni** yaratadi va ularga permission biriktiradi.
+- Userda **bir nechta rol** bo'lishi mumkin (`user_roles`). Ishlatilayotgan rolni o'chirib bo'lmaydi (`RESTRICT`). `system` rollar (`admin`, `user`) o'chirilmaydi (trigger). `admin` — oddiy rol, unga `user:crud` va `role:crud` seed qilingan.
+- **Kalitlar `TEXT`** (`actions.key` — `CHAR(1)`), Sonyflake emas (14-qaror, [system](system.md)): bu kichik lug'at jadvallar, qatorlari migratsiyada seed qilinadi va kalit tokenga to'g'ridan-to'g'ri yoziladi. Kalit o'zgarmaydi, ko'rinadigan nom `name` da.
+- **Token'da** userning barcha rollaridagi permissionlar resurs bo'yicha birlashtiriladi: rollardan `user:r` va `user:ru` kelsa, token'ga `user:ru` yoziladi. Har bir resurs token'da bir marta keladi: `"permissions": ["role:crud", "user:ru"]`. Permission o'zgarishi keyingi refresh'da, ko'pi bilan `ACCESS_TOKEN_TTL` ichida kuchga kiradi.
+
+  ```sql
+  SELECT x.resource || ':' || string_agg(x.action, '' ORDER BY x.sort_order) AS permission
+  FROM (
+      SELECT DISTINCT p.resource, a.key::text AS action, a.sort_order
+      FROM user_roles ur
+      JOIN role_permissions rp ON rp.role = ur.role
+      JOIN permissions p ON p.key = rp.permission
+      JOIN actions a ON strpos(p.actions, a.key::text) > 0
+      WHERE ur.user_id = $1
+  ) x
+  GROUP BY x.resource
+  ORDER BY 1;
+  ```
+
+- **`users.role` vaqtincha qoladi.** `000003` uning qiymatini `user_roles` ga ko'chiradi. Kod `user_roles` ga o'tgach, keyingi migratsiya `users.role` ni o'chiradi.
+
 ## Ochiq savollar
 
 - Dashboard view'lari qancha vaqtda bir yangilanadi va buni nima bajaradi (server ichidagi ticker yoki `pg_cron`)? Prod'da bir nechta pod bo'lsa, yangilashni faqat bittasi bajarishi kerak.
+- `users.role` qachon o'chiriladi: kod `user_roles` va permissionlarga o'tgandan keyin (24-qaror).
+- `user` roliga boshlang'ich permission kerakmi? Hozir u bo'sh.
+- Access token'ga `permissions` dan tashqari `roles` claim'i ham kerakmi?
