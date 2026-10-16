@@ -21,6 +21,13 @@ func registerSwaggerUI(router fiber.Router, dir string) error {
 		}
 		return c.Next()
 	})
-	router.Static("/swagger-ui", dir)
+	// no-cache: the browser revalidates every time (304 if unchanged), so an edited
+	// swagger-initializer.js is never served stale from the heuristic cache.
+	router.Static("/swagger-ui", dir, fiber.Static{
+		ModifyResponse: func(c *fiber.Ctx) error {
+			c.Set(fiber.HeaderCacheControl, "no-cache")
+			return nil
+		},
+	})
 	return nil
 }
