@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"auth-api/internal"
+	"auth-service/internal"
 
 	"github.com/gofiber/fiber/v2"
 )

@@ -5,9 +5,9 @@ import (
 	"net/mail"
 	"strings"
 
-	"auth-api/internal"
-	"auth-api/internal/session"
-	"auth-api/internal/user"
+	"auth-service/internal"
+	"auth-service/internal/session"
+	"auth-service/internal/user"
 
 	"github.com/gofiber/fiber/v2"
 )

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"auth-api/internal"
+	"auth-service/internal"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

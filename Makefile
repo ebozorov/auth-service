@@ -6,10 +6,10 @@ export $(ENV_VARS)
 endif
 
 BIN_DIR  := bin
-BIN      := $(BIN_DIR)/auth-api
-PID_FILE := $(BIN_DIR)/auth-api.pid
+BIN      := $(BIN_DIR)/auth-service
+PID_FILE := $(BIN_DIR)/auth-service.pid
 LOG_DIR  := logs
-LOG_FILE := $(LOG_DIR)/auth-api.log
+LOG_FILE := $(LOG_DIR)/auth-service.log
 
 PRIVATE_KEY := $(or $(JWT_PRIVATE_KEY_PATH),certs/private.pem)
 KEYS_DIR    := $(dir $(PRIVATE_KEY))
@@ -65,15 +65,15 @@ swagger-ui:
 start: build keys
 	@mkdir -p $(LOG_DIR)
 	@if $(RUNNING); then \
-		echo "auth-api allaqachon ishlayapti (PID $$(cat $(PID_FILE)))"; \
+		echo "auth-service allaqachon ishlayapti (PID $$(cat $(PID_FILE)))"; \
 	else \
 		nohup ./$(BIN) > $(LOG_FILE) 2>&1 & echo $$! > $(PID_FILE); \
 		sleep 1; \
 		if $(RUNNING); then \
-			echo "auth-api ishga tushdi (PID $$(cat $(PID_FILE))), log: $(LOG_FILE)"; \
+			echo "auth-service ishga tushdi (PID $$(cat $(PID_FILE))), log: $(LOG_FILE)"; \
 			grep -E "ishlayapti: |web: |api: |swagger ui: " $(LOG_FILE) | sed -E 's/^[0-9/]+ [0-9:]+ /  /'; \
 		else \
-			echo "auth-api ishga tushmadi:"; tail -n 20 $(LOG_FILE); rm -f $(PID_FILE); exit 1; \
+			echo "auth-service ishga tushmadi:"; tail -n 20 $(LOG_FILE); rm -f $(PID_FILE); exit 1; \
 		fi; \
 	fi
 
@@ -81,9 +81,9 @@ stop:
 	@if $(RUNNING); then \
 		pid=$$(cat $(PID_FILE)); kill $$pid; \
 		while kill -0 $$pid 2>/dev/null; do sleep 0.1; done; \
-		rm -f $(PID_FILE); echo "auth-api to'xtatildi"; \
+		rm -f $(PID_FILE); echo "auth-service to'xtatildi"; \
 	else \
-		rm -f $(PID_FILE); echo "auth-api ishlamayapti"; \
+		rm -f $(PID_FILE); echo "auth-service ishlamayapti"; \
 	fi
 
 # Graceful restart: joriy so'rovlar tugaydi, server yangi env bilan ko'tariladi
@@ -92,9 +92,9 @@ reload:
 
 status:
 	@if $(RUNNING); then \
-		echo "auth-api ishlayapti (PID $$(cat $(PID_FILE)))"; \
+		echo "auth-service ishlayapti (PID $$(cat $(PID_FILE)))"; \
 	else \
-		echo "auth-api ishlamayapti"; \
+		echo "auth-service ishlamayapti"; \
 	fi
 
 # Tashqi servicelar: ro'yxati $(COMPOSE_FILE) da

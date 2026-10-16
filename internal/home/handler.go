@@ -1,7 +1,7 @@
 package home
 
 import (
-	"auth-api/internal/auth"
+	"auth-service/internal/auth"
 
 	"gorm.io/gorm"
 )

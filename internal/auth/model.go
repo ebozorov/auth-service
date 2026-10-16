@@ -3,7 +3,7 @@ package auth
 import (
 	"time"
 
-	"auth-api/internal/session"
+	"auth-service/internal/session"
 )
 
 // signinRequest is one "enter email" step; a magic link is emailed for it (docs/DECISION.md #3).

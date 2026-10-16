@@ -1,5 +1,5 @@
 {
-  "name": "auth-api-web",
+  "name": "auth-service-web",
   "private": true,
   "type": "module",
   "scripts": {

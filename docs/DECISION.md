@@ -94,9 +94,9 @@ Barcha limitlar env orqali sozlanadi. Sozlanmagan bo'lsa, quyidagi standart qiym
 | `SIGN_IN_REDIRECT_URL` | `/` | brauzerda link ochilgandan keyin yo'naltiriladigan manzil |
 | `PUBLIC_URL` | `http://localhost:5000` | tashqaridan ko'rinadigan manzil, emaildagi link shu bilan boshlanadi |
 
-## 11. IP bo'yicha limit auth-api ichida
+## 11. IP bo'yicha limit auth-service ichida
 
-- IP limit auth-api'ning o'zida, xotirada (in-memory) hisoblanadi. Tashqi servis (Redis va boshqalar) ishlatilmaydi.
+- IP limit auth-service'ning o'zida, xotirada (in-memory) hisoblanadi. Tashqi servis (Redis va boshqalar) ishlatilmaydi.
 - Proxy ortida ishlaganda haqiqiy IP `TRUST_PROXY=true` bo'lsagina olinadi.
 - Server qayta ishga tushsa, hisoblagich nolga tushadi.
 - Tizim Kubernetes'da bir nechta instance (pod) bo'lib ishlaydi va har bir pod o'zicha hisoblaydi. Shuning uchun amaldagi limit taxminan `SIGN_IN_IP_LIMIT × podlar soni` bo'ladi. Bu qabul qilingan: user limiti (8-qaror) Postgres'da hisoblanadi va hamma podlar uchun umumiy.
@@ -115,9 +115,9 @@ claude.ai'dagi kabi: link so'rov yuborilgan brauzerda ochilsa, user avtomatik ti
 - Mos kelmasa (boshqa qurilma, muddati o'tgan yoki ishlatilgan link), brauzer `SIGN_IN_REDIRECT_URL` ga xato belgisi bilan yo'naltiriladi va session yaratilmaydi.
 - Ilova va curl'da hech narsa o'zgarmaydi: `POST /auth/sign-in/link` tokenlarni body'da qaytaradi, `POST /auth/refresh` refresh tokenni body'dan oladi.
 
-## 13. Email: SMTP orqali, auth-api'ning o'zi yuboradi
+## 13. Email: SMTP orqali, auth-service'ning o'zi yuboradi
 
-- Xatni auth-api'ning o'zi yuboradi, broker yoki alohida mail servis ishlatilmaydi. SMTP sozlamalari env orqali beriladi: `SMTP_HOST`, `SMTP_PORT` (`587`), `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`.
+- Xatni auth-service'ning o'zi yuboradi, broker yoki alohida mail servis ishlatilmaydi. SMTP sozlamalari env orqali beriladi: `SMTP_HOST`, `SMTP_PORT` (`587`), `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`.
 - `SMTP_HOST` bo'sh bo'lsa (dev/test), xat yuborilmaydi, link logga yoziladi. `prod` da `SMTP_HOST` majburiy.
 - Xat fonda yuboriladi, shunda javob vaqtidan email tizimda bor-yo'qligini bilib bo'lmaydi.
 
@@ -207,7 +207,7 @@ Ma'lumot jadvaldan jadvalga ko'chib o'tadi. Har bir bosqichda kerakli ma'lumot k
 
 ## 17. API `/api/v1` ostida, qolgan yo'llar web UI
 
-auth-api o'z web UI'si bilan birga keladi (Keycloak kabi): login sahifalari va admin konsol bitta binary ichida.
+auth-service o'z web UI'si bilan birga keladi (Keycloak kabi): login sahifalari va admin konsol bitta binary ichida.
 
 - Barcha API endpointlari `/api/v1` ostida. Cookie path'lari ham shu prefiks bilan: `device_secret` uchun `/api/v1/auth/sign-in`, refresh token uchun `/api/v1/auth`.
 - Qolgan GET yo'llarga web UI javob beradi. Fayl bo'lmagan yo'lga `index.html` qaytadi, routing'ni React bajaradi. `/api/v1` ostidagi noma'lum yo'l esa JSON 404 bo'lib qoladi.

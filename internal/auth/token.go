@@ -116,7 +116,7 @@ func (t *TokenManager) JWKS() JWKS {
 }
 
 // kidNamespace scopes key IDs derived by keyID.
-var kidNamespace = uuid.NewSHA1(uuid.NameSpaceURL, []byte("auth-api/jwt-kid"))
+var kidNamespace = uuid.NewSHA1(uuid.NameSpaceURL, []byte("auth-service/jwt-kid"))
 
 // keyID derives a UUID (v5) from the key's thumbprint:
 // stable across restarts and changes whenever the key does.

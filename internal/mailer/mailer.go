@@ -18,7 +18,7 @@ type Config struct {
 	From     string
 }
 
-// Mailer sends plain-text emails over SMTP. auth-api sends email itself,
+// Mailer sends plain-text emails over SMTP. auth-service sends email itself,
 // without any other service.
 type Mailer struct {
 	cfg Config

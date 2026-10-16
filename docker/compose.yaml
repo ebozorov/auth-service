@@ -1,9 +1,9 @@
-name: auth-api
+name: auth-service
 
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: auth-api-postgres
+    container_name: auth-service-postgres
     environment:
       POSTGRES_USER: ${DB_USER:-auth}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-auth}
@@ -21,7 +21,7 @@ services:
   # Lokal SMTP: xatlarni ushlab oladi, UI: http://localhost:8025
   mailpit:
     image: axllent/mailpit:v1.31
-    container_name: auth-api-mailpit
+    container_name: auth-service-mailpit
     ports:
       - "1025:1025"
       - "8025:8025"

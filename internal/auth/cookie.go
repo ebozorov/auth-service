@@ -3,7 +3,7 @@ package auth
 import (
 	"time"
 
-	"auth-api/internal"
+	"auth-service/internal"
 
 	"github.com/gofiber/fiber/v2"
 )

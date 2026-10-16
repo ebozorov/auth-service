@@ -29,7 +29,7 @@ export function AdminLayout() {
   return (
     <div className="flex min-h-svh">
       <aside className="flex w-60 flex-col border-r bg-muted/40 p-4">
-        <div className="mb-6 px-2 text-lg font-semibold">auth-api</div>
+        <div className="mb-6 px-2 text-lg font-semibold">auth-service</div>
         <nav className="flex flex-1 flex-col gap-1">
           {nav.map(({ to, label, icon: Icon }) => (
             <NavLink

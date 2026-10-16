@@ -8,14 +8,14 @@ import (
 	"syscall"
 	"time"
 
-	"auth-api/internal"
-	"auth-api/internal/admin"
-	"auth-api/internal/auth"
-	"auth-api/internal/home"
-	"auth-api/internal/mailer"
-	"auth-api/internal/session"
-	"auth-api/internal/user"
-	"auth-api/web"
+	"auth-service/internal"
+	"auth-service/internal/admin"
+	"auth-service/internal/auth"
+	"auth-service/internal/home"
+	"auth-service/internal/mailer"
+	"auth-service/internal/session"
+	"auth-service/internal/user"
+	"auth-service/web"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	appName    = "auth-api"
+	appName    = "auth-service"
 	appVersion = "0.2.0"
 )
 

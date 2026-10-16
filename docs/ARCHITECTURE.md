@@ -1,6 +1,6 @@
 # Arxitektura
 
-auth-api qanday tuzilgani: kirish oqimi, endpointlar, kod tuzilmasi, JWT va ma'lumotlar bazasi. Nima uchun aynan shunday qilingani: [DECISION.md](DECISION.md). API'ning to'liq tavsifi: [openapi.json](openapi.json).
+auth-service qanday tuzilgani: kirish oqimi, endpointlar, kod tuzilmasi, JWT va ma'lumotlar bazasi. Nima uchun aynan shunday qilingani: [DECISION.md](DECISION.md). API'ning to'liq tavsifi: [openapi.json](openapi.json).
 
 ## Kirish oqimi
 

@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"auth-api/internal"
-	"auth-api/internal/session"
+	"auth-service/internal"
+	"auth-service/internal/session"
 
 	"github.com/gofiber/fiber/v2"
 )

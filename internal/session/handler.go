@@ -3,7 +3,7 @@ package session
 import (
 	"errors"
 
-	"auth-api/internal"
+	"auth-service/internal"
 
 	"github.com/gofiber/fiber/v2"
 )

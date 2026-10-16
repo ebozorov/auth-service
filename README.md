@@ -1,4 +1,4 @@
-# auth-api
+# auth-service
 
 Ishxona xodimlari uchun autentifikatsiya API. Parol yo'q: xodim email kiritadi va emailga kelgan magic link orqali kiradi. Har bir session bitta qurilma hisoblanadi, uni istalgan vaqtda tugatish mumkin.
 
@@ -52,8 +52,8 @@ Server hech qanday env faylni o'zi o'qimaydi. Lokal rejimda `.env.local` ni `mak
 
 | Buyruq | Tavsif |
 |---|---|
-| `make build` | web UI va `bin/auth-api` binary'ni yig'ish |
-| `make start` | build, kalit yaratish va serverni fonda ishga tushirish (log: `logs/auth-api.log`) |
+| `make build` | web UI va `bin/auth-service` binary'ni yig'ish |
+| `make start` | build, kalit yaratish va serverni fonda ishga tushirish (log: `logs/auth-service.log`) |
 | `make stop` / `make status` | serverni to'xtatish / holatini ko'rish |
 | `make reload` | graceful restart: joriy so'rovlar tugaydi, server yangi env bilan qayta ishga tushadi |
 | `make services-up` / `services-down` / `services-status` | `docker/compose.yaml` dagi servicelar: PostgreSQL, Mailpit (UI: http://localhost:8025) |

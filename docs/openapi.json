@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "auth-api",
+    "title": "auth-service",
     "version": "0.2.0",
     "description": "Ishxona xodimlari uchun autentifikatsiya API. Parolsiz kirish: email orqali magic link, link faqat so'rov yuborilgan qurilmada ishlaydi. Session = qurilma."
   },
