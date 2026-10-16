@@ -5,6 +5,10 @@ import { SettingsPage } from "@/features/settings/settings-page";
 import { UsersPage } from "@/features/users/users-page";
 import { AdminLayout } from "@/layouts/admin-layout";
 import { AuthLayout } from "@/layouts/auth-layout";
+import type { MessageKey } from "@/lib/i18n";
+
+// Navbar sahifa nomini shu yerdan oladi (useMatches).
+export type RouteHandle = { title?: MessageKey };
 
 export const router = createBrowserRouter(
   [
@@ -16,9 +20,9 @@ export const router = createBrowserRouter(
       element: <AdminLayout />,
       children: [
         { index: true, element: <Navigate to="users" replace /> },
-        { path: "users", element: <UsersPage /> },
-        { path: "clients", element: <ClientsPage /> },
-        { path: "settings", element: <SettingsPage /> },
+        { path: "users", element: <UsersPage />, handle: { title: "nav.users" } satisfies RouteHandle },
+        { path: "clients", element: <ClientsPage />, handle: { title: "nav.clients" } satisfies RouteHandle },
+        { path: "settings", element: <SettingsPage />, handle: { title: "nav.settings" } satisfies RouteHandle },
       ],
     },
   ],

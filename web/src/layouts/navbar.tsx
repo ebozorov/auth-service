@@ -1,5 +1,5 @@
 import { Languages, LogOut, Monitor, Moon, PanelLeft, Sun } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useMatches, useNavigate } from "react-router";
 import { logout, type Schemas } from "@/api/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { locales, useI18n, type Locale } from "@/lib/i18n";
 import { useTheme, type Theme } from "@/lib/theme";
+import type { RouteHandle } from "@/router";
 
 export function LanguageMenu() {
   const { locale, setLocale, t } = useI18n();
@@ -116,11 +117,16 @@ function ProfileMenu({ user }: { user: Schemas["User"] }) {
 
 export function Navbar({ user, onToggleSidebar }: { user: Schemas["User"]; onToggleSidebar: () => void }) {
   const { t } = useI18n();
+  const title = useMatches()
+    .map((m) => (m.handle as RouteHandle | undefined)?.title)
+    .filter(Boolean)
+    .at(-1);
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center gap-1 border-b bg-background/80 px-4 backdrop-blur">
-      <Button variant="ghost" size="icon" className="mr-auto" aria-label={t("navbar.sidebar")} onClick={onToggleSidebar}>
+      <Button variant="ghost" size="icon" aria-label={t("navbar.sidebar")} onClick={onToggleSidebar}>
         <PanelLeft />
       </Button>
+      <h1 className="mr-auto ml-1 truncate text-base font-semibold">{title && t(title)}</h1>
       <LanguageMenu />
       <ThemeMenu />
       <div className="ml-2">

@@ -44,7 +44,6 @@ export function UsersPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">{t("nav.users")}</h1>
       {users.isError ? (
         <p className="text-sm text-destructive">{users.error.message}</p>
       ) : (
