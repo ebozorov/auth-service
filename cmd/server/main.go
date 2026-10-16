@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -99,7 +100,8 @@ func main() {
 	})
 	// user and sid come from the auth middleware's locals; empty on public routes.
 	app.Use(recover.New(), logger.New(logger.Config{
-		Format: "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | user=${locals:userID} sid=${locals:sessionID} | ${error}\n",
+		Format:     "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | user=${locals:userID} sid=${locals:sessionID} | ${error}\n",
+		CustomTags: map[string]logger.LogFunc{logger.TagMethod: logMethod},
 	}))
 	// gzip/br/deflate by Accept-Encoding; JSON shrinks ~15x.
 	app.Use(compress.New())
@@ -163,6 +165,36 @@ func cleanup(sessions *session.Service, authHandler *auth.Handler) {
 			log.Printf("cleanup sign-in requests: %v", err)
 		}
 		time.Sleep(cleanupInterval)
+	}
+}
+
+// logMethod writes the method padded to 7 characters (OPTIONS is the longest), so the
+// columns after it line up, like ${status} and ${latency} do. Colors match Fiber's own
+// ${method}; Fiber turns them on because Output is the default os.Stdout.
+func logMethod(output logger.Buffer, c *fiber.Ctx, _ *logger.Data, _ string) (int, error) {
+	colors := c.App().Config().ColorScheme
+	return fmt.Fprintf(output, "%s%-7s%s", methodColor(c.Method(), colors), c.Method(), colors.Reset)
+}
+
+// methodColor is a copy of Fiber's unexported logger.methodColor.
+func methodColor(method string, colors fiber.Colors) string {
+	switch method {
+	case fiber.MethodGet:
+		return colors.Cyan
+	case fiber.MethodPost:
+		return colors.Green
+	case fiber.MethodPut:
+		return colors.Yellow
+	case fiber.MethodDelete:
+		return colors.Red
+	case fiber.MethodPatch:
+		return colors.White
+	case fiber.MethodHead:
+		return colors.Magenta
+	case fiber.MethodOptions:
+		return colors.Blue
+	default:
+		return colors.Reset
 	}
 }
 
