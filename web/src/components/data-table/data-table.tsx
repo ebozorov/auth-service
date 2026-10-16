@@ -8,7 +8,7 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,9 +17,11 @@ type Props<T> = {
   columns: ColumnDef<T, any>[];
   data: T[];
   searchPlaceholder?: string;
+  // Qidiruv yonida, o'ng tomonda turadigan tugmalar.
+  toolbar?: ReactNode;
 };
 
-export function DataTable<T>({ columns, data, searchPlaceholder }: Props<T>) {
+export function DataTable<T>({ columns, data, searchPlaceholder, toolbar }: Props<T>) {
   const { t } = useI18n();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -37,12 +39,15 @@ export function DataTable<T>({ columns, data, searchPlaceholder }: Props<T>) {
 
   return (
     <div className="flex flex-col gap-4">
-      <Input
-        className="max-w-xs"
-        placeholder={searchPlaceholder ?? t("table.search")}
-        value={globalFilter}
-        onChange={(e) => setGlobalFilter(e.target.value)}
-      />
+      <div className="flex items-center justify-between gap-2">
+        <Input
+          className="max-w-xs"
+          placeholder={searchPlaceholder ?? t("table.search")}
+          value={globalFilter}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+        />
+        {toolbar}
+      </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>

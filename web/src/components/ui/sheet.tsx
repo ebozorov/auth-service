@@ -83,4 +83,8 @@ function SheetDescription({ className, ...props }: React.ComponentProps<typeof S
   )
 }
 
-export { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription }
+function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return <div data-slot="sheet-footer" className={cn("mt-auto flex flex-col gap-2 p-4", className)} {...props} />
+}
+
+export { Sheet, SheetContent, SheetHeader, SheetFooter, SheetTitle, SheetDescription }
