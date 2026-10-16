@@ -1,18 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
-import { KeyRound, LogOut, Settings, Users } from "lucide-react";
-import { Navigate, NavLink, Outlet, useNavigate } from "react-router";
-import { api, logout, type Schemas } from "@/api/client";
-import { Button } from "@/components/ui/button";
+import { KeyRound, Settings, Users } from "lucide-react";
+import { Navigate, NavLink, Outlet } from "react-router";
+import { api, type Schemas } from "@/api/client";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { Navbar } from "./navbar";
 
 const nav = [
-  { to: "users", label: "Foydalanuvchilar", icon: Users },
-  { to: "clients", label: "Clientlar", icon: KeyRound },
-  { to: "settings", label: "Sozlamalar", icon: Settings },
-];
+  { to: "users", label: "nav.users", icon: Users },
+  { to: "clients", label: "nav.clients", icon: KeyRound },
+  { to: "settings", label: "nav.settings", icon: Settings },
+] as const;
 
 export function AdminLayout() {
-  const navigate = useNavigate();
+  const { t } = useI18n();
   const me = useQuery({
     queryKey: ["me"],
     queryFn: () => api<Schemas["User"]>("/auth/me"),
@@ -21,14 +22,9 @@ export function AdminLayout() {
   if (me.isPending) return null;
   if (me.isError) return <Navigate to="/login" replace />;
 
-  async function onLogout() {
-    await logout();
-    navigate("/login", { replace: true });
-  }
-
   return (
     <div className="flex min-h-svh">
-      <aside className="flex w-60 flex-col border-r bg-muted/40 p-4">
+      <aside className="sticky top-0 flex h-svh w-60 flex-col border-r bg-muted/40 p-4">
         <div className="mb-6 px-2 text-lg font-semibold">auth-service</div>
         <nav className="flex flex-1 flex-col gap-1">
           {nav.map(({ to, label, icon: Icon }) => (
@@ -43,22 +39,17 @@ export function AdminLayout() {
               }
             >
               <Icon className="size-4" />
-              {label}
+              {t(label)}
             </NavLink>
           ))}
         </nav>
-        <div className="border-t pt-4">
-          <div className="truncate px-2 text-sm font-medium">{me.data.name}</div>
-          <div className="mb-2 truncate px-2 text-xs text-muted-foreground">{me.data.email}</div>
-          <Button variant="ghost" size="sm" className="w-full justify-start" onClick={onLogout}>
-            <LogOut />
-            Chiqish
-          </Button>
-        </div>
       </aside>
-      <main className="flex-1 p-8">
-        <Outlet />
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Navbar user={me.data} />
+        <main className="flex-1 p-8">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

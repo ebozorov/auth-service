@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useI18n } from "@/lib/i18n";
 
 // device_secret HttpOnly cookie bo'lib keladi, magic link faqat shu brauzerda ishlaydi.
 async function signIn(body: Schemas["SignInRequest"]) {
@@ -22,6 +23,7 @@ async function signIn(body: Schemas["SignInRequest"]) {
 }
 
 export function SignInPage() {
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const mutation = useMutation({ mutationFn: signIn });
 
@@ -31,15 +33,13 @@ export function SignInPage() {
   }
 
   if (mutation.isSuccess) {
+    const [before, after] = t("signIn.sent").split("{email}");
     return (
       <Card>
         <CardHeader className="items-center text-center">
           <MailCheck className="mb-2 size-10 text-muted-foreground" />
-          <CardTitle>Emailingizni tekshiring</CardTitle>
-          <CardDescription>
-            <span className="font-medium text-foreground">{email}</span> manziliga kirish linki
-            yuborildi. Linkni shu brauzerda oching.
-          </CardDescription>
+          <CardTitle>{t("signIn.checkTitle")}</CardTitle>
+          <CardDescription>{before}<span className="font-medium text-foreground">{email}</span>{after}</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -48,13 +48,13 @@ export function SignInPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Kirish</CardTitle>
-        <CardDescription>Emailingizni kiriting, kirish linkini yuboramiz.</CardDescription>
+        <CardTitle>{t("signIn.title")}</CardTitle>
+        <CardDescription>{t("signIn.description")}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("signIn.email")}</Label>
             <Input
               id="email"
               type="email"
@@ -67,7 +67,7 @@ export function SignInPage() {
           </div>
           {mutation.isError && <p className="text-sm text-destructive">{mutation.error.message}</p>}
           <Button type="submit" disabled={mutation.isPending}>
-            Link yuborish
+            {t("signIn.submit")}
           </Button>
         </form>
       </CardContent>

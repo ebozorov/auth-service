@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>auth-service</title>
+    <!-- React yuklanguncha mavzu va tilni qo'llaydi (src/lib/theme.tsx, src/lib/i18n.tsx bilan bir xil kalitlar) -->
+    <script>
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches))
+          document.documentElement.classList.add("dark");
+        var l = localStorage.getItem("locale");
+        if (l) document.documentElement.lang = l;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

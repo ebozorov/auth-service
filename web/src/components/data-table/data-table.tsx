@@ -10,6 +10,7 @@ import {
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type Props<T> = {
@@ -18,7 +19,8 @@ type Props<T> = {
   searchPlaceholder?: string;
 };
 
-export function DataTable<T>({ columns, data, searchPlaceholder = "Qidirish..." }: Props<T>) {
+export function DataTable<T>({ columns, data, searchPlaceholder }: Props<T>) {
+  const { t } = useI18n();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
@@ -37,7 +39,7 @@ export function DataTable<T>({ columns, data, searchPlaceholder = "Qidirish..." 
     <div className="flex flex-col gap-4">
       <Input
         className="max-w-xs"
-        placeholder={searchPlaceholder}
+        placeholder={searchPlaceholder ?? t("table.search")}
         value={globalFilter}
         onChange={(e) => setGlobalFilter(e.target.value)}
       />
@@ -79,7 +81,7 @@ export function DataTable<T>({ columns, data, searchPlaceholder = "Qidirish..." 
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                  Ma'lumot yo'q
+                  {t("table.empty")}
                 </TableCell>
               </TableRow>
             )}

@@ -1,44 +1,54 @@
 import { useQuery } from "@tanstack/react-query";
 import { createColumnHelper } from "@tanstack/react-table";
+import { useMemo } from "react";
 import { api, type Schemas } from "@/api/client";
 import { DataTable } from "@/components/data-table/data-table";
 import { Badge } from "@/components/ui/badge";
+import { useI18n } from "@/lib/i18n";
 
 type User = Schemas["User"];
 
 const col = createColumnHelper<User>();
 
-const columns = [
-  col.accessor("name", { header: "Ism" }),
-  col.accessor("email", { header: "Email" }),
-  col.accessor("role", {
-    header: "Rol",
-    cell: (c) => <Badge variant={c.getValue() === "admin" ? "default" : "secondary"}>{c.getValue()}</Badge>,
-  }),
-  col.accessor("enabled", {
-    header: "Holat",
-    cell: (c) =>
-      c.getValue() ? <Badge variant="outline">faol</Badge> : <Badge variant="destructive">o'chirilgan</Badge>,
-  }),
-  col.accessor("created_at", {
-    header: "Qo'shilgan",
-    cell: (c) => (c.getValue() ? new Date(c.getValue()!).toLocaleDateString() : ""),
-  }),
-];
-
 export function UsersPage() {
+  const { locale, t } = useI18n();
   const users = useQuery({
     queryKey: ["admin", "users"],
     queryFn: () => api<User[]>("/admin/users"),
   });
 
+  const columns = useMemo(
+    () => [
+      col.accessor("name", { header: t("users.name") }),
+      col.accessor("email", { header: t("users.email") }),
+      col.accessor("role", {
+        header: t("users.role"),
+        cell: (c) => <Badge variant={c.getValue() === "admin" ? "default" : "secondary"}>{c.getValue()}</Badge>,
+      }),
+      col.accessor("enabled", {
+        header: t("users.status"),
+        cell: (c) =>
+          c.getValue() ? (
+            <Badge variant="outline">{t("users.enabled")}</Badge>
+          ) : (
+            <Badge variant="destructive">{t("users.disabled")}</Badge>
+          ),
+      }),
+      col.accessor("created_at", {
+        header: t("users.createdAt"),
+        cell: (c) => (c.getValue() ? new Date(c.getValue()!).toLocaleDateString(locale) : ""),
+      }),
+    ],
+    [locale, t],
+  );
+
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Foydalanuvchilar</h1>
+      <h1 className="text-2xl font-semibold">{t("nav.users")}</h1>
       {users.isError ? (
         <p className="text-sm text-destructive">{users.error.message}</p>
       ) : (
-        <DataTable columns={columns} data={users.data ?? []} searchPlaceholder="Ism yoki email..." />
+        <DataTable columns={columns} data={users.data ?? []} searchPlaceholder={t("users.search")} />
       )}
     </div>
   );
