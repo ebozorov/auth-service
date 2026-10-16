@@ -55,4 +55,4 @@ Qarorlar kategoriya bo'yicha [`decisions/`](decisions/) papkasida yuritiladi. Bu
 Har bir kategoriya faylining oxirida:
 
 - [system.md](decisions/system.md#ochiq-savollar) — prod Kubernetes tafsilotlari.
-- [database.md](decisions/database.md#ochiq-savollar) — dashboard view'larini yangilash, `users.role` ni o'chirish, rollar va token claim'lari.
+- [database.md](decisions/database.md#ochiq-savollar) — dashboard view'larini yangilash, rollar va token claim'lari.
