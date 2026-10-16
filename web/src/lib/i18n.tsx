@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 const uz = {
+  "nav.dashboard": "Bosh sahifa",
   "nav.users": "Foydalanuvchilar",
   "nav.clients": "Clientlar",
   "nav.settings": "Sozlamalar",
@@ -66,6 +67,7 @@ const uz = {
 export type MessageKey = keyof typeof uz;
 
 const ru: Record<MessageKey, string> = {
+  "nav.dashboard": "Главная",
   "nav.users": "Пользователи",
   "nav.clients": "Клиенты",
   "nav.settings": "Настройки",
@@ -129,6 +131,7 @@ const ru: Record<MessageKey, string> = {
 };
 
 const en: Record<MessageKey, string> = {
+  "nav.dashboard": "Dashboard",
   "nav.users": "Users",
   "nav.clients": "Clients",
   "nav.settings": "Settings",

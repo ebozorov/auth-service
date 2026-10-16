@@ -1,6 +1,7 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter } from "react-router";
 import { SignInPage } from "@/features/auth/sign-in-page";
 import { ClientsPage } from "@/features/clients/clients-page";
+import { DashboardPage } from "@/features/dashboard/dashboard-page";
 import { SettingsPage } from "@/features/settings/settings-page";
 import { UsersPage } from "@/features/users/users-page";
 import { AdminLayout } from "@/layouts/admin-layout";
@@ -19,7 +20,7 @@ export const router = createBrowserRouter(
     {
       element: <AdminLayout />,
       children: [
-        { index: true, element: <Navigate to="users" replace /> },
+        { index: true, element: <DashboardPage />, handle: { title: "nav.dashboard" } satisfies RouteHandle },
         { path: "users", element: <UsersPage />, handle: { title: "nav.users" } satisfies RouteHandle },
         { path: "clients", element: <ClientsPage />, handle: { title: "nav.clients" } satisfies RouteHandle },
         { path: "settings", element: <SettingsPage />, handle: { title: "nav.settings" } satisfies RouteHandle },

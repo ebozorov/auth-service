@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { KeyRound, Settings, Users } from "lucide-react";
 import { useState } from "react";
-import { Navigate, NavLink, Outlet } from "react-router";
+import { Link, Navigate, NavLink, Outlet } from "react-router";
 import { api, type Schemas } from "@/api/client";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -51,9 +51,13 @@ export function AdminLayout() {
           collapsed ? "w-14" : "w-60",
         )}
       >
-        <div className="mb-4 flex h-10 items-center px-2.5 text-lg font-semibold whitespace-nowrap">
+        <Link
+          to="/"
+          title={collapsed ? t("nav.dashboard") : undefined}
+          className="mb-4 flex h-10 items-center rounded-md px-2.5 text-lg font-semibold whitespace-nowrap hover:bg-accent hover:text-accent-foreground"
+        >
           {collapsed ? "a" : "auth-service"}
-        </div>
+        </Link>
         <nav className="flex flex-1 flex-col gap-1">
           {nav.map(({ to, label, icon: Icon }) => (
             <NavLink
