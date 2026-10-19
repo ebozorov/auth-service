@@ -48,11 +48,11 @@ Qarorlar kategoriya bo'yicha [`decisions/`](decisions/) papkasida yuritiladi. Bu
 | 21 | ID'lar JSON'da string | [api](decisions/api.md) |
 | 22 | ID turlari: `int64` va `internal.ID` | [models](decisions/models.md) |
 | 23 | Dashboard ma'lumotlari materialized view'da | [database](decisions/database.md) |
-| 24 | Rollar va permissionlar | [database](decisions/database.md) |
+| 24 | Rollar va permissionlar: rol hardcoded (`admin`, `user`), permissionlar boshqa servisda | [database](decisions/database.md) |
 
 ## Ochiq savollar
 
 Har bir kategoriya faylining oxirida:
 
 - [system.md](decisions/system.md#ochiq-savollar) — prod Kubernetes tafsilotlari.
-- [database.md](decisions/database.md#ochiq-savollar) — dashboard view'larini yangilash, rollar va token claim'lari.
+- [database.md](decisions/database.md#ochiq-savollar) — dashboard view'larini yangilash.

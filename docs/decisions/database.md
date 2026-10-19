@@ -6,12 +6,7 @@ Jadvallar, ustunlar va view'lar. Sxemaning manbasi: `migrations/`. Barcha qarorl
 
 | Jadval | Vazifasi |
 |---|---|
-| `actions` | amallar, bir belgili kalit: `c`, `r`, `u`, `d` (24-qaror) |
-| `resources` | permission himoya qiladigan narsalar: `user`, `role`, ... (24-qaror) |
-| `permissions` | bitta resursdagi bitta amal: `user:c` (24-qaror) |
-| `roles` | rollar: permissionlar to'plami va token uchun yig'ilgan `permissions` (24-qaror) |
-| `role_permissions` | rol ↔ permission (24-qaror) |
-| `users` | xodimlar (email, ism, `role`, `enabled`); `role` — `roles` ga FK (24-qaror) |
+| `users` | xodimlar (email, ism, `role`, `enabled`); `role` — `admin` yoki `user` (24-qaror) |
 | `signin_requests` | kutilayotgan magic link so'rovlari va qurilma ma'lumoti |
 | `sessions` | faol sessionlar = qurilmalar |
 | `ended_sessions` | tugagan sessionlar arxivi: session ma'lumoti va qachon, nima uchun, kim tomonidan tugatilgani |
@@ -20,12 +15,8 @@ Migratsiyalar har bir jadval (yoki bir-biriga bog'liq jadvallar guruhi) uchun al
 
 | Fayl | Jadvallar |
 |---|---|
-| `000000_actions` | `actions` |
-| `000001_resources` | `resources` |
-| `000002_permissions` | `permissions` |
-| `000003_roles` | `roles`, `role_permissions` |
-| `000004_users` | `users` |
-| `000005_sessions` | `signin_requests`, `sessions`, `ended_sessions` (16-qaror) |
+| `000000_users` | `users` |
+| `000001_sessions` | `signin_requests`, `sessions`, `ended_sessions` (16-qaror) |
 
 **Prod holati:** loyiha hali prod'ga chiqmagan. Shuning uchun sxema o'zgarganda mavjud migratsiya fayllari to'g'ridan-to'g'ri tahrirlanadi, yangi raqamli fayl qo'shilmaydi. Prod'ga chiqqach, bu yerga sana yoziladi. Shundan keyin chiqqan migratsiyalar o'zgartirilmaydi, har bir o'zgarish yangi raqamli faylda bo'ladi.
 
@@ -75,28 +66,13 @@ Ma'lumot jadvaldan jadvalga ko'chib o'tadi. Har bir bosqichda kerakli ma'lumot k
 
 ## 24. Rollar va permissionlar
 
-Qaysi rolga qanday permission berilganini belgilaydi. Userning permissionlari access token'da `permissions` claim'i bo'lib boradi. Migratsiyalar: `000000_actions` … `000004_users`.
+auth-service faqat **authentication** bilan shug'ullanadi: user kimligini aniqlaydi. Permissionlarni boshqarish bu servisning vazifasi emas.
 
-- **Amal** (`actions`) — resurs bilan nima qilish mumkinligi. Kaliti bitta belgi (`a-z`, `0-9`), migratsiyada beriladi: `c` create, `r` read, `u` update, `d` delete. **Resurs** (`resources`) — permission himoya qiladigan narsa: `user`, `role`, keyinchalik `order`, `payment`.
-- **Permission** — bitta resursdagi **bitta amal**, bitta qator: `resource` va `action` ustunlari `resources` va `actions` ga FK. Kaliti `resurs:amal`, masalan `user:c` ("Create users"); `key = resource || ':' || action` ni `CHECK` tekshiradi. Har bir permissionning `name` va `description` i bor. Ishlatilayotgan resurs yoki amalni FK o'chirishga qo'ymaydi.
-- `actions`, `resources` va `permissions` ni **faqat migratsiya** to'ldiradi: permissionni servis kodi tekshiradi, shuning uchun uni dasturchi qo'shadi. Admin **rollarni** yaratadi va ularga permission biriktiradi (`role_permissions`).
-- **Userda bitta rol**: `users.role` — `roles (key)` ga FK, standart qiymati `'user'`. Rol ma'lumoti faqat shu ustunda, alohida `user_roles` jadvali yo'q.
-- **Rolni o'chirish:** unga biriktirilgan userlar bo'lsa o'chirib bo'lmaydi (`users.role` → `RESTRICT`, `users_role_idx`), aks holda istalgan rol o'chiriladi; permission bog'lanishlari rol bilan birga o'chadi (`role_permissions` → `CASCADE`). Maxsus (system) rollar yo'q. `admin` va `user` — oddiy rollar: `admin` ga barcha permissionlar seed qilingan, `user` bo'sh. `user` roli o'chirilsa, rolsiz qo'shilgan user FK xatosi bilan rad etiladi.
-- **Kalitlar `TEXT`** (`actions.key` — `CHAR(1)`), Sonyflake emas (14-qaror, [system](system.md)): bu kichik lug'at jadvallar, qatorlari migratsiyada seed qilinadi va kalit tokenga to'g'ridan-to'g'ri yoziladi. Kalit o'zgarmaydi, ko'rinadigan nom `name` da.
-- **Seed `INSERT` lar faqat `VALUES` bilan**, har bir qator aniq yoziladi; `INSERT ... SELECT` ishlatilmaydi. Migratsiya faylidan nima qo'shilayotgani to'liq ko'rinishi kerak. Yangi resurs yoki amal qo'shilsa, kerakli permissionlar va ularning rollarga biriktirilishi ham qatorma-qator yoziladi.
-- **`roles.permissions` oldindan yig'iladi** — token'ga yoziladigan tayyor qiymat: rolning permissionlari resurs bo'yicha birlashtirilgan, harflar `actions.sort_order` tartibida, resurslar alifbo tartibida, masalan `{role:r,user:cru}`.
-  - Ustunni faqat `role_permissions` dagi `AFTER INSERT OR DELETE` trigger yozadi: rolning `permissions` ini `role_permission_keys` bilan qayta hisoblaydi va `updated_at` ni yangilaydi. Permission o'chib CASCADE bo'lganda ham shu trigger ishlaydi.
-  - `roles` da trigger yo'q: `name`, `description` o'zgarishi permissionlarga ta'sir qilmaydi.
-  - `role_permissions` qatorlari faqat qo'shiladi va o'chiriladi, `UPDATE` qilinmaydi — aks holda ustun eskicha qoladi. `roles.permissions` ga qo'lda yozilmaydi.
-  - `actions.sort_order` ni o'zgartiradigan migratsiya oxirida `UPDATE roles SET permissions = role_permission_keys(key);` bilan barcha rollar qayta hisoblanadi.
-- **Token** uchun bitta o'qish yetadi: `"permissions": ["role:crud", "user:crud"]`. Permission o'zgarishi keyingi refresh'da, ko'pi bilan `ACCESS_TOKEN_TTL` ichida kuchga kiradi.
-
-  ```sql
-  SELECT r.permissions FROM users u JOIN roles r ON r.key = u.role WHERE u.id = $1;
-  ```
+- **Rol hardcoded:** `users.role` — `admin` yoki `user`, `CHECK (role IN ('admin', 'user'))`, standart qiymati `'user'`. Alohida `roles` jadvali yo'q.
+- **`admin` — to'liq ruxsat:** admin amallari kodda `role == admin` tekshiruvi bilan ochiladi. `user` faqat tizimga kiradi.
+- **Access token'da permissionlar yo'q:** permissionlar ro'yxati cheksiz o'sishi mumkin, token payload'i esa kichik bo'lishi kerak. Go kodida permissionlar qismi yo'q.
+- **`actions`, `resources`, `permissions`, `roles`, `role_permissions`** jadvallari va ularning seed ma'lumotlari `../permissions-service/migrations/` ga ko'chirildi. Rollar va permissionlar o'sha servisda hal qilinadi.
 
 ## Ochiq savollar
 
 - Dashboard view'lari qancha vaqtda bir yangilanadi va buni nima bajaradi (server ichidagi ticker yoki `pg_cron`)? Prod'da bir nechta pod bo'lsa, yangilashni faqat bittasi bajarishi kerak.
-- `user` roliga boshlang'ich permission kerakmi? Hozir u bo'sh.
-- Access token'ga `permissions` dan tashqari `roles` claim'i ham kerakmi?
