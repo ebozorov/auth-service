@@ -1,6 +1,6 @@
 // Package integration tests the service from the outside, like a client: real HTTP
 // requests to a running server, with Postgres and Mailpit in containers
-// (docs/DECISION.md #15). Run with `make test INTEGRATION=1`; Docker is required.
+// (docs/DECISION.md #15). Run with `make test`; Docker is required.
 package integration
 
 import (

@@ -95,11 +95,10 @@ test/integration/
 └── users_test.go       /users: rol bo'yicha ruxsat, admin amallari
 ```
 
-Flag bo'lmasa faqat unit testlar ishlaydi. Integration testlar flag bilan yoqiladi:
+`make test` barcha testlarni cache'siz ishlatadi (Docker kerak):
 
 ```sh
-make test                  # go test ./...                     faqat unit
-make test INTEGRATION=1    # + cd test/integration && go test ./...   unit + integration
+make test    # go test -count=1 ./...  +  cd test/integration && go test -count=1 ./...
 ```
 
 ## 17. API va web UI bitta binary ichida

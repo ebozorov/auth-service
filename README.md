@@ -71,4 +71,4 @@ Server env faylni o'zi o'qimaydi: lokal rejimda `config/.env.local` ni `make` yu
 | `make web-dev` | Vite dev server (http://localhost:5173), API so'rovlari Go serverga proxy qilinadi |
 | `make web-build` | web UI'ni `web/dist` ga build qilish |
 | `make web-types` | `docs/openapi.json` dan `web/src/api/schema.d.ts` ni qayta yaratish |
-| `make test` / `make test INTEGRATION=1` | unit testlar / unit + integration (testcontainers, Docker kerak). `config/.env.local` yuklanmaydi |
+| `make test` | barcha testlar cache'siz: unit + integration (testcontainers, Docker kerak). `config/.env.local` yuklanmaydi |

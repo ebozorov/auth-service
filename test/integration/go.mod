@@ -1,5 +1,5 @@
 // Integration testlar va ularning dependencylari (testcontainers) serverning go.mod iga
-// aralashmasligi uchun alohida modulda. Ishlatish: make test INTEGRATION=1
+// aralashmasligi uchun alohida modulda. Ishlatish: make test
 module auth-service/test/integration
 
 go 1.26.0
