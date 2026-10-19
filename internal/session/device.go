@@ -2,6 +2,7 @@ package session
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	"github.com/mssola/useragent"
 )
@@ -48,7 +49,12 @@ func DetectDevice(sent Device, userAgent string) Device {
 func clean(s string) string {
 	s = strings.TrimSpace(s)
 	if len(s) > maxDeviceFieldLength {
-		s = s[:maxDeviceFieldLength]
+		// Cut on a character boundary, so a multi-byte character is not split.
+		n := maxDeviceFieldLength
+		for n > 0 && !utf8.RuneStart(s[n]) {
+			n--
+		}
+		s = s[:n]
 	}
 	return s
 }
