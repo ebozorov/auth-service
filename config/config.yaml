@@ -1,0 +1,21 @@
+# Dinamik sozlamalar (docs/decisions/system.md, 25-qaror): server faylni kuzatadi va
+# o'zgarganda restartsiz qayta o'qiydi. Kalit yo'q bo'lsa, standart qiymat olinadi.
+# Xato fayl serverni to'xtatmaydi: eski qiymatlar qoladi, xato log'ga yoziladi.
+# Muddatlar yangi narsalarga ta'sir qiladi: mavjud token va sessionlar eski muddat bilan qoladi.
+# Bu fayl lokal dev uchun; prod da Kubernetes ConfigMap'dan ulanadi.
+
+# --- sign-in ---
+# magic link amal qilish muddati (standart 10m)
+sign_in_request_ttl: 5m
+# bitta userga sign_in_user_window ichida so'rovlar soni (standart 5, 1h)
+sign_in_user_limit: 3
+sign_in_user_window: 1h
+# bitta IP'dan sign_in_ip_window ichida so'rovlar va noto'g'ri link urinishlari (standart 20, 1h)
+sign_in_ip_limit: 20
+sign_in_ip_window: 1h
+
+# --- jwt ---
+# access token muddati (standart 15m)
+access_token_ttl: 5m
+# session (refresh token) muddati (standart 720h)
+refresh_token_ttl: 24h

@@ -15,7 +15,7 @@ Ishxona xodimlari uchun ichki tizim. Userlar oldindan kiritiladi. O'zi ro'yxatda
 
 ## 10. Limitlar — environment variable orqali
 
-Barcha limitlar env orqali sozlanadi. Sozlanmagan bo'lsa, quyidagi standart qiymatlar olinadi:
+Barcha limitlar env orqali sozlanadi. Sozlanmagan bo'lsa, quyidagi standart qiymatlar olinadi. Jadvaldagi limitlar va muddatlar (`SIGN_IN_REQUEST_TTL` … `REFRESH_TOKEN_TTL`) 25-qaror bilan dinamik sozlamalar fayliga ko'chadi, `SIGN_IN_REDIRECT_URL` va `PUBLIC_URL` env'da qoladi:
 
 | O'zgaruvchi | Standart | Ma'nosi |
 |---|---|---|
@@ -63,12 +63,12 @@ Barcha limitlar env orqali sozlanadi. Sozlanmagan bo'lsa, quyidagi standart qiym
 
 | Rejim | Nima uchun | Sozlama qayerdan |
 |---|---|---|
-| `dev` | lokal ishlab chiqish (`make start`) | `.env.local` fayli (`make` yuklaydi): o'zimiz ko'rsatgan servislar (Postgres, SMTP) |
-| `test` | avtomatik testlar (`make test`) | `.env.local` yuklanmaydi, hammasi localhost. Integration testlarga kerakli servislarni testcontainers ko'taradi |
+| `dev` | lokal ishlab chiqish (`make start`) | `config/.env.local` fayli (`make` yuklaydi): o'zimiz ko'rsatgan servislar (Postgres, SMTP). Dinamik sozlamalar: `config/config.yaml` (25-qaror) |
+| `test` | avtomatik testlar (`make test`) | `config/.env.local` yuklanmaydi, hammasi localhost. Integration testlarga kerakli servislarni testcontainers ko'taradi |
 | `prod` | Kubernetes, tafsilotlari hali aniqlanmagan | container environment. Prod tekshiruvlari himoya sifatida qoladi: Swagger taqiqlangan, `SMTP_HOST` majburiy |
 
 - `make test` hech qanday env faylga bog'liq emas va dev bazasiga ulanmaydi.
-- Server env fayl o'qimaydi. Repoda faqat `.env.local` (lokal dev sozlamalari) saqlanadi, uni `make` yuklaydi. `.env` fayli ishlatilmaydi.
+- Server env fayl o'qimaydi. Repoda faqat `config/.env.local` (lokal dev sozlamalari) saqlanadi, uni `make` yuklaydi. `.env` fayli ishlatilmaydi. Server o'zi o'qiydigan yagona fayl — dinamik sozlamalar fayli (25-qaror).
 
 ### Unit va integration testlar
 
@@ -78,7 +78,7 @@ Integration testlar build tag bilan ajratiladi:
 - Integration testlar alohida `test/integration/` papkasida. Ular tizimni tashqaridan, client kabi tekshiradi: HTTP so'rov yuboradi va javobni tekshiradi (sign-in → link → refresh → logout, admin amallari va hokazo).
 - Har bir integration fayl boshida `//go:build integration` bo'ladi. Tag bo'lmasa `go test ./...` bu papkani ham ishga tushirib, Docker talab qilib qolardi.
 - Bitta `TestMain` testcontainers orqali Postgres va Mailpit'ni ko'taradi, barcha integration testlar shulardan foydalanadi. Buning uchun Docker kerak.
-- Integration testlar `Config` ni env orqali emas, struct sifatida o'zi yig'adi: baza va SMTP manzillari faqat konteynerlardan olinadi. `make test` esa `.env.local` dagi o'zgaruvchilarni test process'iga bermaydi.
+- Integration testlar `Config` ni env orqali emas, struct sifatida o'zi yig'adi: baza va SMTP manzillari faqat konteynerlardan olinadi. `make test` esa `config/.env.local` dagi o'zgaruvchilarni test process'iga bermaydi.
 - Testlar serverni import qila olishi uchun server `main.go` dan exported funksiyaga chiqariladi (masalan, `app.New(cfg)`).
 
 ```
@@ -103,6 +103,39 @@ auth-service o'z web UI'si bilan birga keladi (Keycloak kabi): login sahifalari 
 - `web/dist` `embed` orqali binary ichiga kiradi, Node faqat build vaqtida kerak.
 - API yo'llari: 19-qaror ([api](api.md)). Web UI routing'i va steki: 20-qaror ([web](web.md)).
 
+## 25. Dinamik sozlamalar: fayl va qayta yuklash
+
+Ba'zi sozlamalarni server qayta ishga tushmasdan o'zgartirish kerak, masalan hujum paytida limitni pasaytirish. Buning uchun sozlamalar ikki guruhga bo'linadi.
+
+| Guruh | Qayerda | O'zgarsa |
+|---|---|---|
+| **Statik** | env (10-, 13-, 15-qarorlar) | restart kerak |
+| **Dinamik** | YAML fayl | server faylni qayta o'qiydi, restart kerak emas |
+
+- **Dinamik sozlamalar** — faqat limitlar va muddatlar:
+
+| Kalit | Standart | Oldingi env |
+|---|---|---|
+| `sign_in_request_ttl` | `10m` | `SIGN_IN_REQUEST_TTL` |
+| `sign_in_user_limit` | `5` | `SIGN_IN_USER_LIMIT` |
+| `sign_in_user_window` | `1h` | `SIGN_IN_USER_WINDOW` |
+| `sign_in_ip_limit` | `20` | `SIGN_IN_IP_LIMIT` |
+| `sign_in_ip_window` | `1h` | `SIGN_IN_IP_WINDOW` |
+| `access_token_ttl` | `15m` | `ACCESS_TOKEN_TTL` |
+| `refresh_token_ttl` | `720h` | `REFRESH_TOKEN_TTL` |
+
+- **Qolganlari statik:** baza, port, JWT kaliti, SMTP, `APP_ENV`, `PUBLIC_URL`, `SIGN_IN_REDIRECT_URL`, Swagger. Ular ulanishlar va server tuzilishiga ta'sir qiladi, ishlab turgan serverda almashtirish xavfli.
+- **Dinamik sozlama faqat faylda.** Env'dagi eski nomlar o'qilmaydi. Aks holda env fayldagi qiymatni bosib, fayl o'zgarishi hech narsa qilmay qolardi. Bitta sozlama — bitta manba.
+- **Fayllar `config/` papkasida:** `config/.env.local` — statik sozlamalar (lokal dev, `make` yuklaydi), `config/config.yaml` — dinamik sozlamalar (server o'zi o'qiydi).
+- **Fayl yo'li:** `CONFIG_FILE` env (standart `config/config.yaml`). Fayl bo'lmasa yoki unda kalit bo'lmasa, standart qiymat olinadi, shuning uchun fayl bo'sh yoki qisman bo'lishi mumkin. Standart qiymatlar `internal/dynamic.go` da (`DefaultDynamic`).
+- **Qayta yuklash:** server fayl turgan **papkani** kuzatadi (`fsnotify`), faylning o'zini emas: Kubernetes ConfigMap faylni symlink almashtirish orqali yangilaydi. Ketma-ket hodisalar qisqa kutish (debounce) bilan bitta qayta o'qishga birlashadi.
+- **Xato fayl serverni to'xtatmaydi:** yangi fayl o'qiladi va tekshiriladi (musbat son, musbat muddat, noma'lum kalit yo'q — kalit nomidagi xato ko'rinsin). Xato bo'lsa, server eski qiymatlar bilan ishlashda davom etadi va xatoni log'ga yozadi. Ishga tushishda xato fayl esa server ishga tushmaydi.
+- **Kod qiymatni har safar o'qiydi:** sozlamalar `atomic.Pointer` ichida, yangilanish butun struct'ni bir zumda almashtiradi. Kod qiymatni ishga tushishda nusxalab olmaydi, kerak bo'lganda oxirgi qiymatni oladi. O'zgarish log'ga eski → yangi qiymat bilan yoziladi.
+- **O'zgarish faqat yangi narsalarga ta'sir qiladi:** muddat yaratilishda hisoblanadi (`expires_at`, token `exp`). `access_token_ttl` yoki `refresh_token_ttl` o'zgarsa, mavjud token va sessionlar eski muddat bilan qoladi. Limit va oyna o'zgarishi keyingi tekshiruvdan boshlab kuchga kiradi.
+- **Kutubxona:** `fsnotify` va `gopkg.in/yaml.v3`, loader o'zimizniki. `viper`/`koanf` ishlatilmaydi: sozlamalar soni kam va `internal/config.go` allaqachon qo'lda yozilgan.
+- **Prod:** fayl Kubernetes ConfigMap'dan papka sifatida ulanadi (`subPath` bilan emas, aks holda fayl yangilanmaydi). ConfigMap o'zgargach, kubelet faylni ~1 daqiqa ichida yangilaydi. Har bir pod faylni o'zi qayta o'qiydi, shuning uchun podlar qisqa vaqt turli qiymatda ishlashi mumkin. Bu qabul qilingan.
+
 ## Ochiq savollar
 
+- Dinamik sozlamalar git'da saqlanib, ConfigMap'ga avtomatik yetkaziladimi (ArgoCD, Flux) yoki qo'lda `kubectl apply` qilinadimi?
 - Prod Kubernetes'da ishlaydi. Qolgan tafsilotlar (qaysi SMTP server, ingress, secretlar) hali aniqlanmagan.

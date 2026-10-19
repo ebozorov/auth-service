@@ -1,6 +1,8 @@
-# Lokal sozlamalar .env.local dan olinadi va faqat undagi kalitlar eksport qilinadi
--include .env.local
-ENV_VARS := $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env.local 2>/dev/null)
+# Lokal statik sozlamalar config/.env.local dan olinadi va faqat undagi kalitlar eksport qilinadi.
+# Dinamik sozlamalar config/config.yaml da, ularni server o'zi o'qiydi va kuzatadi.
+ENV_FILE := config/.env.local
+-include $(ENV_FILE)
+ENV_VARS := $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' $(ENV_FILE) 2>/dev/null)
 ifneq ($(ENV_VARS),)
 export $(ENV_VARS)
 endif
@@ -102,7 +104,8 @@ stop:
 		rm -f $(PID_FILE); echo "auth-service ishlamayapti"; \
 	fi
 
-# Graceful restart: joriy so'rovlar tugaydi, server yangi env bilan ko'tariladi
+# Graceful restart: joriy so'rovlar tugaydi, server yangi env bilan ko'tariladi.
+# config/config.yaml o'zgarishi uchun restart kerak emas.
 reload:
 	@$(MAKE) --no-print-directory stop start
 
@@ -123,7 +126,7 @@ services-down:
 services-status:
 	docker compose -f $(COMPOSE_FILE) ps
 
-# Testlar .env.local ga bog'liq emas: undagi o'zgaruvchilar test process'iga berilmaydi.
+# Testlar config/.env.local ga bog'liq emas: undagi o'zgaruvchilar test process'iga berilmaydi.
 # INTEGRATION=1 bo'lsa integration testlar ham ishlaydi (testcontainers, Docker kerak).
 test:
 	@env $(addprefix -u ,$(ENV_VARS)) go test $(if $(INTEGRATION),-tags=integration) ./...

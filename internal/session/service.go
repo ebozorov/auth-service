@@ -24,13 +24,16 @@ var (
 // Service owns the sessions table and both moves around it:
 // signin_requests → sessions → ended_sessions (docs/DECISION.md #16).
 type Service struct {
-	db  *gorm.DB
-	ttl time.Duration
+	db       *gorm.DB
+	settings *internal.DynamicConfig
 }
 
-func NewService(db *gorm.DB, ttl time.Duration) *Service {
-	return &Service{db: db, ttl: ttl}
+func NewService(db *gorm.DB, settings *internal.DynamicConfig) *Service {
+	return &Service{db: db, settings: settings}
 }
+
+// ttl is read on every use; a new value applies only to new and refreshed sessions.
+func (s *Service) ttl() time.Duration { return s.settings.Get().RefreshTokenTTL }
 
 // Start opens a session from a signin request: the request is deleted and its id
 // and device move to sessions, in one statement, so a link works only once.
@@ -52,7 +55,7 @@ func (s *Service) Start(tokenHash, secretHash, ip string) (*Session, string, err
 		SELECT id, user_id, ?, device, ?, now(), ?, now(), ?
 		FROM used
 		RETURNING *`,
-		tokenHash, secretHash, hash, ip, ip, time.Now().Add(s.ttl),
+		tokenHash, secretHash, hash, ip, ip, time.Now().Add(s.ttl()),
 	).Scan(&sess)
 	if result.Error != nil {
 		return nil, "", result.Error
@@ -77,7 +80,7 @@ func (s *Service) Rotate(refreshToken, ip string) (*Session, string, error) {
 			"token_hash": hash,
 			"current_ip": ip,
 			"current_at": now,
-			"expires_at": now.Add(s.ttl),
+			"expires_at": now.Add(s.ttl()),
 		})
 	if result.Error != nil {
 		return nil, "", result.Error

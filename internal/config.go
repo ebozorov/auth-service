@@ -6,7 +6,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"time"
 )
 
 const (
@@ -15,11 +14,13 @@ const (
 	EnvProd = "prod"
 )
 
-// Config holds all settings. Every value comes from an environment variable
-// and has a default (see .env.local and docs/DECISION.md #10).
+// Config holds the static settings: they change only with a restart. Every value
+// comes from an environment variable and has a default (see config/.env.local and
+// docs/DECISION.md #10). Limits and token lifetimes are in Dynamic (#25).
 type Config struct {
 	// app
 	Env        string
+	ConfigFile string
 	Host       string
 	Port       string
 	PublicURL  string
@@ -30,10 +31,8 @@ type Config struct {
 	MigrationsDir string
 
 	// jwt
-	JWTPrivateKey   string
-	JWTIssuer       string
-	AccessTokenTTL  time.Duration
-	RefreshTokenTTL time.Duration
+	JWTPrivateKey string
+	JWTIssuer     string
 
 	// swagger
 	SwaggerUI    bool
@@ -41,11 +40,6 @@ type Config struct {
 	OpenAPIFile  string
 
 	// sign-in
-	SignInRequestTTL  time.Duration
-	SignInUserLimit   int
-	SignInUserWindow  time.Duration
-	SignInIPLimit     int
-	SignInIPWindow    time.Duration
 	SignInRedirectURL string
 
 	// admin
@@ -62,20 +56,6 @@ type Config struct {
 
 func LoadConfig() (*Config, error) {
 	var errs []error
-	duration := func(key, fallback string) time.Duration {
-		d, err := time.ParseDuration(getEnv(key, fallback))
-		if err != nil || d <= 0 {
-			errs = append(errs, fmt.Errorf("%s: must be a positive duration", key))
-		}
-		return d
-	}
-	number := func(key, fallback string) int {
-		n, err := strconv.Atoi(getEnv(key, fallback))
-		if err != nil || n <= 0 {
-			errs = append(errs, fmt.Errorf("%s: must be a positive number", key))
-		}
-		return n
-	}
 	boolean := func(key, fallback string) bool {
 		b, err := strconv.ParseBool(getEnv(key, fallback))
 		if err != nil {
@@ -88,24 +68,18 @@ func LoadConfig() (*Config, error) {
 		Env:        getEnv("APP_ENV", EnvDev),
 		Host:       getEnv("APP_HOST", "0.0.0.0"),
 		Port:       getEnv("APP_PORT", "5000"),
+		ConfigFile: getEnv("CONFIG_FILE", "config/config.yaml"),
 		TrustProxy: boolean("TRUST_PROXY", "false"),
 
 		DatabaseURL:   getEnv("DATABASE_URL", "postgres://auth:auth@localhost:5433/auth?sslmode=disable"),
 		MigrationsDir: getEnv("MIGRATIONS_DIR", "migrations"),
 
-		JWTPrivateKey:   getEnv("JWT_PRIVATE_KEY_PATH", "certs/private.pem"),
-		JWTIssuer:       getEnv("JWT_ISSUER", "http://localhost:5000"),
-		AccessTokenTTL:  duration("ACCESS_TOKEN_TTL", "15m"),
-		RefreshTokenTTL: duration("REFRESH_TOKEN_TTL", "720h"),
+		JWTPrivateKey: getEnv("JWT_PRIVATE_KEY_PATH", "certs/private.pem"),
+		JWTIssuer:     getEnv("JWT_ISSUER", "http://localhost:5000"),
 
 		SwaggerUIDir: getEnv("SWAGGER_UI_DIR", "swagger-ui"),
 		OpenAPIFile:  getEnv("OPENAPI_FILE", "docs/openapi.json"),
 
-		SignInRequestTTL:  duration("SIGN_IN_REQUEST_TTL", "10m"),
-		SignInUserLimit:   number("SIGN_IN_USER_LIMIT", "5"),
-		SignInUserWindow:  duration("SIGN_IN_USER_WINDOW", "1h"),
-		SignInIPLimit:     number("SIGN_IN_IP_LIMIT", "20"),
-		SignInIPWindow:    duration("SIGN_IN_IP_WINDOW", "1h"),
 		SignInRedirectURL: getEnv("SIGN_IN_REDIRECT_URL", "/"),
 
 		InitialAdminName: getEnv("INITIAL_ADMIN_NAME", "Admin"),

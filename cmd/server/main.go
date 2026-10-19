@@ -42,6 +42,15 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
+	settings, err := internal.LoadDynamic(cfg.ConfigFile)
+	if err != nil {
+		log.Fatalf("dynamic config: %v", err)
+	}
+	// Without a watch the server still runs, only with the values read at startup.
+	if err := settings.Watch(); err != nil {
+		log.Printf("dynamic config: %s kuzatilmaydi: %v", cfg.ConfigFile, err)
+	}
+
 	db, err := internal.ConnectDB(cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("database: %v", err)
@@ -53,7 +62,7 @@ func main() {
 		log.Fatalf("id: %v", err)
 	}
 
-	tokens, err := auth.NewTokenManager(cfg.JWTPrivateKey, cfg.JWTIssuer, cfg.AccessTokenTTL)
+	tokens, err := auth.NewTokenManager(cfg.JWTPrivateKey, cfg.JWTIssuer, settings)
 	if err != nil {
 		log.Fatalf("jwt: %v", err)
 	}
@@ -64,7 +73,7 @@ func main() {
 	}
 
 	users := user.NewService(db)
-	sessions := session.NewService(db, cfg.RefreshTokenTTL)
+	sessions := session.NewService(db, settings)
 	ensureAdmin(users, cfg)
 
 	m := mailer.New(mailer.Config{
@@ -78,12 +87,7 @@ func main() {
 	authHandler := auth.NewHandler(auth.Config{
 		PublicURL:   cfg.PublicURL,
 		RedirectURL: cfg.SignInRedirectURL,
-		RequestTTL:  cfg.SignInRequestTTL,
-		UserLimit:   cfg.SignInUserLimit,
-		UserWindow:  cfg.SignInUserWindow,
-		IPLimit:     cfg.SignInIPLimit,
-		IPWindow:    cfg.SignInIPWindow,
-	}, db, tokens, users, sessions, m)
+	}, settings, db, tokens, users, sessions, m)
 
 	homeHandler := home.NewHandler(db, tokens, openapi, home.Options{
 		Name:         appName,

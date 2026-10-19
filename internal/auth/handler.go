@@ -2,7 +2,6 @@ package auth
 
 import (
 	"errors"
-	"time"
 
 	"auth-service/internal"
 	"auth-service/internal/mailer"
@@ -13,20 +12,17 @@ import (
 	"gorm.io/gorm"
 )
 
-// Config holds the sign-in settings (docs/DECISION.md #10).
+// Config holds the static sign-in settings (docs/DECISION.md #10).
+// Limits and lifetimes are read from settings on every request (#25).
 type Config struct {
 	PublicURL   string
 	RedirectURL string
-	RequestTTL  time.Duration
-	UserLimit   int
-	UserWindow  time.Duration
-	IPLimit     int
-	IPWindow    time.Duration
 }
 
 // Handler serves /auth.
 type Handler struct {
 	cfg      Config
+	settings *internal.DynamicConfig
 	db       *gorm.DB
 	tokens   *TokenManager
 	users    *user.Service
@@ -35,15 +31,16 @@ type Handler struct {
 	limiter  *ipLimiter
 }
 
-func NewHandler(cfg Config, db *gorm.DB, tokens *TokenManager, users *user.Service, sessions *session.Service, m *mailer.Mailer) *Handler {
+func NewHandler(cfg Config, settings *internal.DynamicConfig, db *gorm.DB, tokens *TokenManager, users *user.Service, sessions *session.Service, m *mailer.Mailer) *Handler {
 	return &Handler{
 		cfg:      cfg,
+		settings: settings,
 		db:       db,
 		tokens:   tokens,
 		users:    users,
 		sessions: sessions,
 		mailer:   m,
-		limiter:  newIPLimiter(cfg.IPLimit, cfg.IPWindow),
+		limiter:  newIPLimiter(settings),
 	}
 }
 

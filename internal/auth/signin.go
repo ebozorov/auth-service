@@ -33,23 +33,26 @@ func (h *Handler) SignIn(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid email")
 	}
 
+	// Read once, so the cookie, the row and the email agree even if the file is reloaded meanwhile.
+	settings := h.settings.Get()
+
 	// The device secret ties the link to this device (docs/DECISION.md #4).
 	secret, secretHash := internal.NewToken()
 	device := session.DetectDevice(body.Device, c.Get(fiber.HeaderUserAgent))
-	if err := h.startSignIn(email, secretHash, device, ip); err != nil {
+	if err := h.startSignIn(email, secretHash, device, ip, settings); err != nil {
 		return err
 	}
 
-	setCookie(c, deviceSecretCookie, secret, deviceSecretPath, time.Now().Add(h.cfg.RequestTTL))
+	setCookie(c, deviceSecretCookie, secret, deviceSecretPath, time.Now().Add(settings.SignInRequestTTL))
 	return c.Status(fiber.StatusAccepted).JSON(signInResponse{
 		DeviceSecret: secret,
-		ExpiresIn:    int(h.cfg.RequestTTL.Seconds()),
+		ExpiresIn:    int(settings.SignInRequestTTL.Seconds()),
 	})
 }
 
 // startSignIn stores the request and emails the link. Unknown or disabled users,
 // and users over their limit, are skipped silently.
-func (h *Handler) startSignIn(email, secretHash string, device session.Device, ip string) error {
+func (h *Handler) startSignIn(email, secretHash string, device session.Device, ip string, settings internal.Dynamic) error {
 	u, err := h.users.GetByEmail(email)
 	if errors.Is(err, user.ErrNotFound) {
 		return nil
@@ -63,12 +66,12 @@ func (h *Handler) startSignIn(email, secretHash string, device session.Device, i
 
 	var recent int64
 	err = h.db.Model(&signinRequest{}).
-		Where("user_id = ? AND requested_at > ?", u.ID, time.Now().Add(-h.cfg.UserWindow)).
+		Where("user_id = ? AND requested_at > ?", u.ID, time.Now().Add(-settings.SignInUserWindow)).
 		Count(&recent).Error
 	if err != nil {
 		return err
 	}
-	if recent >= int64(h.cfg.UserLimit) {
+	if recent >= int64(settings.SignInUserLimit) {
 		return nil
 	}
 
@@ -82,24 +85,24 @@ func (h *Handler) startSignIn(email, secretHash string, device session.Device, i
 		Device:      device,
 		RequestedIP: ip,
 		RequestedAt: now,
-		ExpiresAt:   now.Add(h.cfg.RequestTTL),
+		ExpiresAt:   now.Add(settings.SignInRequestTTL),
 	}
 	if err := h.db.Create(&req).Error; err != nil {
 		return err
 	}
 
 	// Sent in the background, so the response time does not show whether the email exists.
-	go h.sendLink(u.Email, token)
+	go h.sendLink(u.Email, token, settings.SignInRequestTTL)
 	return nil
 }
 
-func (h *Handler) sendLink(email, token string) {
+func (h *Handler) sendLink(email, token string, ttl time.Duration) {
 	link := h.cfg.PublicURL + internal.APIPrefix + "/auth/sign-in/link?token=" + url.QueryEscape(token)
 	body := fmt.Sprintf(
 		"Tizimga kirish uchun linkni oching:\n\n%s\n\n"+
 			"Link %d daqiqa amal qiladi va faqat kirish so'ralgan qurilmada ishlaydi.\n"+
 			"Agar siz so'ramagan bo'lsangiz, bu xatni e'tiborsiz qoldiring.\n",
-		link, int(h.cfg.RequestTTL.Minutes()))
+		link, int(ttl.Minutes()))
 
 	if err := h.mailer.Send(email, "Tizimga kirish", body); err != nil {
 		log.Printf("sign-in email to %s: %v", email, err)
@@ -179,7 +182,8 @@ func (h *Handler) redirectURL(code string) string {
 // DeleteOldRequests removes signin requests that never became a session. Rows are kept
 // for the per-user limit window, because the limit counts them. Called periodically.
 func (h *Handler) DeleteOldRequests() (int64, error) {
-	keep := max(h.cfg.UserWindow, h.cfg.RequestTTL)
+	settings := h.settings.Get()
+	keep := max(settings.SignInUserWindow, settings.SignInRequestTTL)
 	result := h.db.Where("requested_at < ?", time.Now().Add(-keep)).Delete(&signinRequest{})
 	return result.RowsAffected, result.Error
 }

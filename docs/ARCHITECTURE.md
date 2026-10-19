@@ -68,7 +68,8 @@ Package by feature: har bir endpoint guruhi o'z papkasida.
 ```
 cmd/server/main.go     kirish nuqtasi
 internal/
-├── config.go          sozlamalar (env)
+├── config.go          statik sozlamalar (env)
+├── dynamic.go         dinamik sozlamalar (config/config.yaml, o'zgarsa qayta o'qiladi)
 ├── database.go        ulanish, migrationlar
 ├── identity.go        joriy user va session (request ichida)
 ├── id.go              ID yaratish
@@ -87,6 +88,7 @@ docs/
 ├── decisions/         qarorlar kategoriya bo'yicha (system, flows, api, database, models, web)
 └── openapi.json       API hujjati
 migrations/            SQL migrationlar (sxemaning manbasi)
+config/                .env.local (statik, make yuklaydi), config.yaml (dinamik, server o'qiydi)
 docker/                compose.yaml (lokal servicelar)
 swagger-ui/            Swagger UI fayllari
 certs/                 RSA private key (standart joyi)

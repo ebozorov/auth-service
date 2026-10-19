@@ -49,10 +49,11 @@ Qarorlar kategoriya bo'yicha [`decisions/`](decisions/) papkasida yuritiladi. Bu
 | 22 | ID turlari: `int64` va `internal.ID` | [models](decisions/models.md) |
 | 23 | Dashboard ma'lumotlari materialized view'da | [database](decisions/database.md) |
 | 24 | Rollar va permissionlar: rol hardcoded (`admin`, `user`), permissionlar boshqa servisda | [database](decisions/database.md) |
+| 25 | Dinamik sozlamalar: fayl va qayta yuklash | [system](decisions/system.md) |
 
 ## Ochiq savollar
 
 Har bir kategoriya faylining oxirida:
 
-- [system.md](decisions/system.md#ochiq-savollar) — prod Kubernetes tafsilotlari.
+- [system.md](decisions/system.md#ochiq-savollar) — prod Kubernetes tafsilotlari, dinamik sozlamalarni yetkazish.
 - [database.md](decisions/database.md#ochiq-savollar) — dashboard view'larini yangilash.

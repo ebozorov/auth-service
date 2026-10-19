@@ -17,7 +17,7 @@ coverage.*
 go.work
 go.work.sum
 
-# Maxfiy env fayllar va RSA kalitlar (.env.local umumiy lokal sozlama, repoda qoladi)
+# Maxfiy env fayllar va RSA kalitlar (config/.env.local umumiy lokal sozlama, repoda qoladi)
 .env
 .env.*
 !.env.local

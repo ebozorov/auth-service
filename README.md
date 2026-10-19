@@ -28,7 +28,7 @@ make start             # build + kalit + server: web http://localhost:5000, API 
 
 Server ishga tushganda migrationlar avtomatik qo'llanadi. To'xtatish: `make stop`.
 
-Lokal sozlamalar `.env.local` da, ularni `make` yuklaydi. Bazada admin bo'lmasa, server `admin@localhost` adminini yaratadi. Xatlar Mailpit'ga boradi: http://localhost:8025.
+Lokal sozlamalar `config/` papkasida: statik sozlamalar `config/.env.local` da (ularni `make` yuklaydi), limitlar va token muddatlari `config/config.yaml` da. Bazada admin bo'lmasa, server `admin@localhost` adminini yaratadi. Xatlar Mailpit'ga boradi: http://localhost:8025.
 
 ## Rejimlar
 
@@ -44,9 +44,16 @@ Swagger UI: `http://localhost:5000/swagger-ui/`. Fayllar git'da saqlanmaydi, ula
 
 ## Sozlamalar
 
-Barcha sozlamalar environment variable orqali beriladi. Ro'yxati `.env.local` da (app, db, jwt, swagger, sign-in, admin, smtp guruhlari). Berilmagan qiymatlar uchun standart qiymat olinadi. Limitlar va sign-in sozlamalari: [docs/DECISION.md](docs/DECISION.md).
+Sozlamalar ikki xil (25-qaror, [docs/decisions/system.md](docs/decisions/system.md)):
 
-Server hech qanday env faylni o'zi o'qimaydi. Lokal rejimda `.env.local` ni `make` yuklaydi, prod da o'zgaruvchilar container environment orqali beriladi.
+| | Fayl | Qanday beriladi | O'zgarsa |
+|---|---|---|---|
+| **Statik** | `config/.env.local` (app, db, jwt, swagger, sign-in, admin, smtp) | environment variable | restart kerak (`make reload`) |
+| **Dinamik** | `config/config.yaml` (limitlar, token muddatlari) | YAML fayl, yo'li `CONFIG_FILE` da | server faylni o'zi qayta o'qiydi, restart kerak emas |
+
+Berilmagan qiymatlar uchun standart qiymat olinadi.
+
+Server env faylni o'zi o'qimaydi: lokal rejimda `config/.env.local` ni `make` yuklaydi, prod da o'zgaruvchilar container environment orqali beriladi. `config/config.yaml` ni esa server o'qiydi va kuzatadi. Prod da u Kubernetes ConfigMap'dan ulanadi. Fayl xato bo'lsa, server eski qiymatlar bilan ishlashda davom etadi va xatoni log'ga yozadi.
 
 ## Buyruqlar
 
@@ -56,7 +63,7 @@ Server hech qanday env faylni o'zi o'qimaydi. Lokal rejimda `.env.local` ni `mak
 | `make dev` | live rejim: web http://localhost:5173. Web o'zgarishlari darhol ko'rinadi (Vite), Go kodi o'zgarsa server qayta ishga tushadi (air, `.air.toml`). Emaildagi link ham 5173 ga keladi. Ctrl+C bilan to'xtaydi |
 | `make start` | build, kalit yaratish va serverni fonda ishga tushirish (log: `logs/auth-service.log`) |
 | `make stop` / `make status` | serverni to'xtatish / holatini ko'rish |
-| `make reload` | graceful restart: joriy so'rovlar tugaydi, server yangi env bilan qayta ishga tushadi |
+| `make reload` | graceful restart: joriy so'rovlar tugaydi, server yangi env bilan qayta ishga tushadi (`config/config.yaml` uchun kerak emas) |
 | `make services-up` / `services-down` / `services-status` | `docker/compose.yaml` dagi servicelar: PostgreSQL, Mailpit (UI: http://localhost:8025) |
 | `make keys` | `JWT_PRIVATE_KEY_PATH` ga RSA private key yaratish (mavjud bo'lsa tegmaydi) |
 | `make swagger-ui` | Swagger UI fayllarini yuklash |
@@ -64,4 +71,4 @@ Server hech qanday env faylni o'zi o'qimaydi. Lokal rejimda `.env.local` ni `mak
 | `make web-dev` | Vite dev server (http://localhost:5173), API so'rovlari Go serverga proxy qilinadi |
 | `make web-build` | web UI'ni `web/dist` ga build qilish |
 | `make web-types` | `docs/openapi.json` dan `web/src/api/schema.d.ts` ni qayta yaratish |
-| `make test` / `make test INTEGRATION=1` | unit testlar / unit + integration (testcontainers, Docker kerak). `.env.local` yuklanmaydi |
+| `make test` / `make test INTEGRATION=1` | unit testlar / unit + integration (testcontainers, Docker kerak). `config/.env.local` yuklanmaydi |

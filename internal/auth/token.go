@@ -44,10 +44,10 @@ type TokenManager struct {
 	privateKey *rsa.PrivateKey
 	kid        string
 	issuer     string
-	accessTTL  time.Duration
+	settings   *internal.DynamicConfig
 }
 
-func NewTokenManager(privateKeyPath, issuer string, accessTTL time.Duration) (*TokenManager, error) {
+func NewTokenManager(privateKeyPath, issuer string, settings *internal.DynamicConfig) (*TokenManager, error) {
 	pemBytes, err := os.ReadFile(privateKeyPath)
 	if err != nil {
 		return nil, fmt.Errorf("read private key: %w (run `make keys`)", err)
@@ -64,11 +64,11 @@ func NewTokenManager(privateKeyPath, issuer string, accessTTL time.Duration) (*T
 		privateKey: key,
 		kid:        keyID(&key.PublicKey),
 		issuer:     issuer,
-		accessTTL:  accessTTL,
+		settings:   settings,
 	}, nil
 }
 
-func (t *TokenManager) AccessTTL() time.Duration { return t.accessTTL }
+func (t *TokenManager) AccessTTL() time.Duration { return t.settings.Get().AccessTokenTTL }
 func (t *TokenManager) Issuer() string           { return t.issuer }
 
 func (t *TokenManager) IssueAccess(userID, sessionID int64) (string, error) {
@@ -79,7 +79,7 @@ func (t *TokenManager) IssueAccess(userID, sessionID int64) (string, error) {
 			Issuer:    t.issuer,
 			Subject:   strconv.FormatInt(userID, 10),
 			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(t.accessTTL)),
+			ExpiresAt: jwt.NewNumericDate(now.Add(t.AccessTTL())),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
