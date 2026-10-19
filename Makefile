@@ -28,7 +28,7 @@ SWAGGER_UI_FILES     := index.html index.css swagger-ui.css swagger-ui-bundle.js
 
 RUNNING := [ -f $(PID_FILE) ] && kill -0 $$(cat $(PID_FILE)) 2>/dev/null
 
-.PHONY: build dev start stop reload status services-up services-down services-status keys swagger-ui web-install web-dev web-build web-types test
+.PHONY: build dev start stop reload status services-up services-down services-status keys swagger-ui web-install web-dev web-build web-types web-test test check
 
 # web/dist binary ichiga embed qilinadi, shuning uchun avval web build bo'ladi
 build: web-build
@@ -63,6 +63,14 @@ web-build:
 # docs/openapi.json dan web/src/api/schema.d.ts ni qayta yaratadi
 web-types:
 	cd web && npm run gen:api
+
+# Web testlari: TypeScript tekshiruvi va Vitest. Avval schema.d.ts openapi.json bilan
+# mosligi tekshiriladi: farq bo'lsa, make web-types esdan chiqqan.
+web-test:
+	@tmp=$$(mktemp --suffix=.d.ts) && trap 'rm -f $$tmp' EXIT && \
+	cd web && npx openapi-typescript ../docs/openapi.json -o $$tmp >/dev/null 2>&1 && \
+	if ! cmp -s $$tmp src/api/schema.d.ts; then echo "web/src/api/schema.d.ts eskirgan: make web-types"; exit 1; fi
+	cd web && npm test
 
 $(PRIVATE_KEY):
 	@mkdir -p $(KEYS_DIR)
@@ -133,3 +141,6 @@ services-status:
 test:
 	@env $(addprefix -u ,$(ENV_VARS)) go test -count=1 ./...
 	@cd test/integration && env $(addprefix -u ,$(ENV_VARS)) go test -count=1 ./...
+
+# Deploydan oldingi tekshiruv: web testlari, keyin Go unit va integration testlar.
+check: web-test test
