@@ -4,7 +4,7 @@
 -- name:        e.g. 'Accountant'
 -- description: e.g. 'Sees and confirms payments'
 -- permissions: the role's permissions joined per resource, as they go into the
---              access token; computed by triggers, never written directly,
+--              access token; written only by the role_permissions trigger,
 --              e.g. {role:r,user:cru}
 -- created_at:  e.g. '2026-10-16 09:00:00+05'
 -- updated_at:  e.g. NULL until the first change
@@ -41,30 +41,20 @@ CREATE FUNCTION role_permission_keys(role_key TEXT) RETURNS TEXT[] LANGUAGE sql 
     ) x
 $$;
 
--- roles.permissions is always computed, never written directly.
-CREATE FUNCTION roles_set_permissions() RETURNS trigger LANGUAGE plpgsql AS $$
+-- A change in role_permissions recomputes the role's permissions.
+-- role_permissions rows are only inserted and deleted, never updated.
+CREATE FUNCTION role_permissions_refresh_role() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+    role_key TEXT := CASE TG_OP WHEN 'INSERT' THEN NEW.role ELSE OLD.role END;
 BEGIN
-    NEW.permissions := role_permission_keys(NEW.key);
-    RETURN NEW;
-END $$;
-
-CREATE TRIGGER roles_set_permissions BEFORE INSERT OR UPDATE ON roles
-    FOR EACH ROW EXECUTE FUNCTION roles_set_permissions();
-
--- A change in role_permissions touches the role, which recomputes roles.permissions.
-CREATE FUNCTION role_permissions_touch_role() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-    IF TG_OP <> 'DELETE' THEN
-        UPDATE roles SET updated_at = now() WHERE key = NEW.role;
-    END IF;
-    IF TG_OP <> 'INSERT' THEN
-        UPDATE roles SET updated_at = now() WHERE key = OLD.role;
-    END IF;
+    UPDATE roles
+    SET permissions = role_permission_keys(role_key), updated_at = now()
+    WHERE key = role_key;
     RETURN NULL;
 END $$;
 
-CREATE TRIGGER role_permissions_touch_role AFTER INSERT OR UPDATE OR DELETE ON role_permissions
-    FOR EACH ROW EXECUTE FUNCTION role_permissions_touch_role();
+CREATE TRIGGER role_permissions_refresh_role AFTER INSERT OR DELETE ON role_permissions
+    FOR EACH ROW EXECUTE FUNCTION role_permissions_refresh_role();
 
 INSERT INTO roles (key, name) VALUES
     ('admin', 'Administrator'),

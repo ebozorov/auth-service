@@ -84,9 +84,10 @@ Qaysi rolga qanday permission berilganini belgilaydi. Userning permissionlari ac
 - **Rolni o'chirish:** unga biriktirilgan userlar bo'lsa o'chirib bo'lmaydi (`users.role` → `RESTRICT`, `users_role_idx`), aks holda istalgan rol o'chiriladi; permission bog'lanishlari rol bilan birga o'chadi (`role_permissions` → `CASCADE`). Maxsus (system) rollar yo'q. `admin` va `user` — oddiy rollar: `admin` ga barcha permissionlar seed qilingan, `user` bo'sh. `user` roli o'chirilsa, rolsiz qo'shilgan user FK xatosi bilan rad etiladi.
 - **Kalitlar `TEXT`** (`actions.key` — `CHAR(1)`), Sonyflake emas (14-qaror, [system](system.md)): bu kichik lug'at jadvallar, qatorlari migratsiyada seed qilinadi va kalit tokenga to'g'ridan-to'g'ri yoziladi. Kalit o'zgarmaydi, ko'rinadigan nom `name` da.
 - **`roles.permissions` oldindan yig'iladi** — token'ga yoziladigan tayyor qiymat: rolning permissionlari resurs bo'yicha birlashtirilgan, harflar `actions.sort_order` tartibida, resurslar alifbo tartibida, masalan `{role:r,user:cru}`.
-  - `roles` dagi `BEFORE INSERT OR UPDATE` trigger har safar ustunni `role_permissions` dan qayta hisoblaydi (`role_permission_keys`), shuning uchun unga qo'lda yozib bo'lmaydi.
-  - `role_permissions` o'zgarganda (qo'shish, olib tashlash, permission o'chib CASCADE bo'lishi) trigger rolning `updated_at` ini yangilaydi va bu ustunni qayta hisoblatadi.
-  - `actions.sort_order` ni o'zgartiradigan migratsiya oxirida `UPDATE roles SET updated_at = updated_at;` bilan barcha rollar qayta hisoblanadi.
+  - Ustunni faqat `role_permissions` dagi `AFTER INSERT OR DELETE` trigger yozadi: rolning `permissions` ini `role_permission_keys` bilan qayta hisoblaydi va `updated_at` ni yangilaydi. Permission o'chib CASCADE bo'lganda ham shu trigger ishlaydi.
+  - `roles` da trigger yo'q: `name`, `description` o'zgarishi permissionlarga ta'sir qilmaydi.
+  - `role_permissions` qatorlari faqat qo'shiladi va o'chiriladi, `UPDATE` qilinmaydi — aks holda ustun eskicha qoladi. `roles.permissions` ga qo'lda yozilmaydi.
+  - `actions.sort_order` ni o'zgartiradigan migratsiya oxirida `UPDATE roles SET permissions = role_permission_keys(key);` bilan barcha rollar qayta hisoblanadi.
 - **Token** uchun bitta o'qish yetadi: `"permissions": ["role:crud", "user:crud"]`. Permission o'zgarishi keyingi refresh'da, ko'pi bilan `ACCESS_TOKEN_TTL` ichida kuchga kiradi.
 
   ```sql
