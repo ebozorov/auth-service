@@ -72,19 +72,25 @@ Barcha limitlar env orqali sozlanadi. Sozlanmagan bo'lsa, quyidagi standart qiym
 
 ### Unit va integration testlar
 
-Integration testlar build tag bilan ajratiladi:
+Integration testlar alohida Go modulida ajratiladi:
 
 - Unit testlar kod yonida, oddiy `*_test.go` fayllarda. Tashqi servis ishlatmaydi.
 - Integration testlar alohida `test/integration/` papkasida. Ular tizimni tashqaridan, client kabi tekshiradi: HTTP so'rov yuboradi va javobni tekshiradi (sign-in → link → refresh → logout, admin amallari va hokazo).
-- Har bir integration fayl boshida `//go:build integration` bo'ladi. Tag bo'lmasa `go test ./...` bu papkani ham ishga tushirib, Docker talab qilib qolardi.
+- `test/integration/` o'z `go.mod` iga ega (`auth-service/test/integration`, `replace auth-service => ../..`), xuddi `tools/go.mod` kabi. Shunday qilib testcontainers va uning dependencylari serverning `go.mod`/`go.sum` iga kirmaydi, `go mod download` ularni yuklamaydi. Root'dagi `go test ./...` boshqa modulni qamramaydi, shuning uchun build tag kerak emas.
+- Go'da dev/test/prod uchun alohida dependency bo'limi yo'q (npm'dagi `devDependencies` kabi). Binary'ga faqat `cmd/server` import qiladigan paketlar kiradi, `_test.go` importlari hech qachon kirmaydi; ajratish faqat `go.mod` ni toza saqlash uchun. `APP_ENV` (dev/test/prod) esa build'ga emas, runtime sozlamaga ta'sir qiladi: hamma rejimda bitta binary.
+- Ikkala modulda server dependencylari bir xil versiyada bo'lishi kerak, aks holda testlar prod'dagidan boshqa kodni sinaydi. Test moduli biror server dependency'sini ko'tarsa (MVS), root'da ham shu versiyaga ko'tariladi.
 - Bitta `TestMain` testcontainers orqali Postgres va Mailpit'ni ko'taradi, barcha integration testlar shulardan foydalanadi. Buning uchun Docker kerak.
 - Integration testlar `Config` ni env orqali emas, struct sifatida o'zi yig'adi: baza va SMTP manzillari faqat konteynerlardan olinadi. `make test` esa `config/.env.local` dagi o'zgaruvchilarni test process'iga bermaydi.
-- Testlar serverni import qila olishi uchun server `main.go` dan exported funksiyaga chiqariladi (masalan, `app.New(cfg)`).
+- Testlar serverni import qila olishi uchun server `main.go` dan `internal/app` ga chiqarilgan: `app.New(cfg)` serverni yig'adi, `Serve(ln)` ishga tushiradi. Testlar uni `127.0.0.1:0` da ko'taradi.
+- Har bir test client'i o'z IP'si bilan keladi (`TRUST_PROXY` yoqilgan, `X-Forwarded-For`), shuning uchun testlar bir-birining IP limitini sarflamaydi. Vaqtni oldinga surish (link yoki session muddati o'tishi) uchungina baza to'g'ridan-to'g'ri o'zgartiriladi.
 
 ```
 test/integration/
+├── go.mod              alohida modul: testcontainers faqat shu yerda
 ├── main_test.go        TestMain: Postgres, Mailpit konteynerlari va server
-├── signin_test.go
+├── helpers_test.go     client (IP, cookie), login, Mailpit'dan link olish
+├── signin_test.go      sign-in: app va brauzer oqimi, link, limitlar
+├── tokens_test.go      refresh, logout, JWKS orqali tekshirish, info
 ├── sessions_test.go
 └── admin_test.go
 ```
@@ -93,7 +99,7 @@ Flag bo'lmasa faqat unit testlar ishlaydi. Integration testlar flag bilan yoqila
 
 ```sh
 make test                  # go test ./...                     faqat unit
-make test INTEGRATION=1    # go test -tags=integration ./...   unit + integration
+make test INTEGRATION=1    # + cd test/integration && go test ./...   unit + integration
 ```
 
 ## 17. API va web UI bitta binary ichida

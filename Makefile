@@ -128,5 +128,7 @@ services-status:
 
 # Testlar config/.env.local ga bog'liq emas: undagi o'zgaruvchilar test process'iga berilmaydi.
 # INTEGRATION=1 bo'lsa integration testlar ham ishlaydi (testcontainers, Docker kerak).
+# Ular alohida modulda (test/integration/go.mod), shuning uchun ./... ularni qamramaydi.
 test:
-	@env $(addprefix -u ,$(ENV_VARS)) go test $(if $(INTEGRATION),-tags=integration) ./...
+	@env $(addprefix -u ,$(ENV_VARS)) go test ./...
+	@$(if $(INTEGRATION),cd test/integration && env $(addprefix -u ,$(ENV_VARS)) go test ./...)

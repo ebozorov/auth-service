@@ -89,6 +89,7 @@ docs/
 ├── decisions/         qarorlar kategoriya bo'yicha (system, flows, api, database, models, web)
 └── openapi.json       API hujjati
 migrations/            SQL migrationlar (sxemaning manbasi)
+test/integration/      integration testlar, alohida Go moduli (testcontainers)
 config/                .env.local (statik, make yuklaydi), config.yaml (dinamik, server o'qiydi)
 docker/                compose.yaml (lokal servicelar)
 swagger-ui/            Swagger UI fayllari
