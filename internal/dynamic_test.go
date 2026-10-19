@@ -3,6 +3,8 @@ package internal
 import (
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 )
@@ -96,6 +98,57 @@ func TestWatchReloadsAndKeepsOldOnError(t *testing.T) {
 
 	writeConfig(t, path, "sign_in_user_limit: 9\n")
 	waitFor(t, func() bool { return c.Get().SignInUserLimit == 9 })
+}
+
+// Every field must be positive, and all bad fields are reported together.
+func TestDynamicValidate(t *testing.T) {
+	if err := DefaultDynamic().validate(); err != nil {
+		t.Fatalf("defaults: %v", err)
+	}
+	d := DefaultDynamic()
+	d.SignInIPLimit = 0
+	d.RefreshTokenTTL = -time.Hour
+	err := d.validate()
+	if err == nil {
+		t.Fatal("want error")
+	}
+	for _, key := range []string{"sign_in_ip_limit", "refresh_token_ttl"} {
+		if !strings.Contains(err.Error(), key) {
+			t.Errorf("error does not mention %s: %v", key, err)
+		}
+	}
+}
+
+func TestDiffDynamic(t *testing.T) {
+	old := DefaultDynamic()
+	if got := diffDynamic(old, old); len(got) != 0 {
+		t.Fatalf("no change: got %v", got)
+	}
+	cur := old
+	cur.SignInUserLimit = 3
+	cur.AccessTokenTTL = 5 * time.Minute
+	got := diffDynamic(old, cur)
+	want := []string{"sign_in_user_limit: 5 → 3", "access_token_ttl: 15m0s → 5m0s"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+// A file that disappears keeps the old values; the server must not fall back to defaults.
+func TestReloadKeepsOldWhenFileMissing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	writeConfig(t, path, "sign_in_user_limit: 3\n")
+	c, err := LoadDynamic(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	c.reload()
+	if got := c.Get().SignInUserLimit; got != 3 {
+		t.Fatalf("got %d, want the old 3", got)
+	}
 }
 
 func waitFor(t *testing.T, ok func() bool) {

@@ -47,3 +47,17 @@ func TestIDUnmarshalRejectsNonInteger(t *testing.T) {
 		}
 	}
 }
+
+func TestNewIDIsUniqueAndOrdered(t *testing.T) {
+	if err := InitID(); err != nil {
+		t.Skipf("no private IP for the machine id: %v", err)
+	}
+	prev := NewID()
+	for range 1000 {
+		id := NewID()
+		if id <= prev {
+			t.Fatalf("id %d is not after %d", id, prev)
+		}
+		prev = id
+	}
+}
