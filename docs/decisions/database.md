@@ -70,9 +70,11 @@ auth-service faqat **authentication** bilan shug'ullanadi: user kimligini aniqla
 
 - **Rol hardcoded:** `users.role` — `admin` yoki `user`, `CHECK (role IN ('admin', 'user'))`, standart qiymati `'user'`. Alohida `roles` jadvali yo'q.
 - **Ruxsat rol bo'yicha, kodda:** endpointlar resursni bildiradi (`/users`), `/admin` kabi alohida prefiks yo'q. Ruxsat ichkarida HTTP metod va rol bo'yicha tekshiriladi (`user.Allowed`): `admin` hamma amalni bajaradi, `user` faqat o'qiydi (`GET`), boshqa rol uchun 403. CHECK boshqa rolni bazaga kiritmaydi, kod esa himoya sifatida baribir rad etadi. O'z akkaunti (`/auth/me`, `/auth/logout`, `/sessions`) bu qoidaga kirmaydi: tizimga kirgan har bir user uni boshqaradi.
+- **`user` hamma userni ko'radi:** auth-service ishxona xodimlari uchun, shuning uchun o'qish hammaga ochiq: barcha userlar va ularning qurilmalari (IP bilan). `user` bilan `admin` farqi faqat yozishda.
 - **Access token'da permissionlar yo'q:** permissionlar ro'yxati cheksiz o'sishi mumkin, token payload'i esa kichik bo'lishi kerak. Go kodida permissionlar qismi yo'q.
 - **`actions`, `resources`, `permissions`, `roles`, `role_permissions`** jadvallari va ularning seed ma'lumotlari `../permissions-service/migrations/` ga ko'chirildi. Rollar va permissionlar o'sha servisda hal qilinadi.
 
 ## Ochiq savollar
 
+- `user` qaysi userlarni ko'rishi (hozir hammasini): masalan, faqat o'z bo'limini. Bu ko'rish doirasi qayerda hal qilinadi: shu yerda yoki permissions-service'da (24-qaror)?
 - Dashboard view'lari qancha vaqtda bir yangilanadi va buni nima bajaradi (server ichidagi ticker yoki `pg_cron`)? Prod'da bir nechta pod bo'lsa, yangilashni faqat bittasi bajarishi kerak.

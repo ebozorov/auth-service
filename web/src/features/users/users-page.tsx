@@ -6,6 +6,7 @@ import { api, type Schemas } from "@/api/client";
 import { DataTable } from "@/components/data-table/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useMe } from "@/layouts/admin-layout";
 import { useI18n } from "@/lib/i18n";
 import { UserFormSheet, type UserFormTarget } from "./user-form-sheet";
 import { UserSessionsSheet } from "./user-sessions-sheet";
@@ -18,6 +19,8 @@ export function UsersPage() {
   const { locale, t } = useI18n();
   const [sessionsOf, setSessionsOf] = useState<User | null>(null);
   const [formTarget, setFormTarget] = useState<UserFormTarget>(null);
+  // admin hammasini o'zgartiradi, user faqat ko'radi (24-qaror); server ham shunday tekshiradi.
+  const canEdit = useMe().data?.role === "admin";
   const users = useQuery({
     queryKey: ["admin", "users"],
     queryFn: () => api<User[]>("/users"),
@@ -48,10 +51,12 @@ export function UsersPage() {
         id: "actions",
         cell: (c) => (
           <div className="flex justify-end gap-1">
-            <Button variant="ghost" size="sm" onClick={() => setFormTarget(c.row.original)}>
-              <Pencil />
-              {t("users.edit")}
-            </Button>
+            {canEdit && (
+              <Button variant="ghost" size="sm" onClick={() => setFormTarget(c.row.original)}>
+                <Pencil />
+                {t("users.edit")}
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={() => setSessionsOf(c.row.original)}>
               <MonitorSmartphone />
               {t("users.sessions")}
@@ -60,7 +65,7 @@ export function UsersPage() {
         ),
       }),
     ],
-    [locale, t],
+    [canEdit, locale, t],
   );
 
   return (
@@ -73,15 +78,17 @@ export function UsersPage() {
           data={users.data ?? []}
           searchPlaceholder={t("users.search")}
           toolbar={
-            <Button onClick={() => setFormTarget("new")}>
-              <Plus />
-              {t("users.add")}
-            </Button>
+            canEdit && (
+              <Button onClick={() => setFormTarget("new")}>
+                <Plus />
+                {t("users.add")}
+              </Button>
+            )
           }
         />
       )}
       <UserFormSheet target={formTarget} onClose={() => setFormTarget(null)} />
-      <UserSessionsSheet user={sessionsOf} onClose={() => setSessionsOf(null)} />
+      <UserSessionsSheet user={sessionsOf} canTerminate={canEdit} onClose={() => setSessionsOf(null)} />
     </div>
   );
 }

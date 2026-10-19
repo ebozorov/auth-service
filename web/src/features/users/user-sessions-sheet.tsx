@@ -11,7 +11,15 @@ type User = Schemas["User"];
 type Session = Schemas["Session"];
 
 // user null bo'lsa panel yopiq.
-export function UserSessionsSheet({ user, onClose }: { user: User | null; onClose: () => void }) {
+export function UserSessionsSheet({
+  user,
+  canTerminate,
+  onClose,
+}: {
+  user: User | null;
+  canTerminate: boolean;
+  onClose: () => void;
+}) {
   const { t } = useI18n();
   return (
     <Sheet open={user !== null} onOpenChange={(open) => !open && onClose()}>
@@ -24,7 +32,7 @@ export function UserSessionsSheet({ user, onClose }: { user: User | null; onClos
                 {user.name} · {user.email}
               </SheetDescription>
             </SheetHeader>
-            <SessionList user={user} />
+            <SessionList user={user} canTerminate={canTerminate} />
           </>
         )}
       </SheetContent>
@@ -32,7 +40,7 @@ export function UserSessionsSheet({ user, onClose }: { user: User | null; onClos
   );
 }
 
-function SessionList({ user }: { user: User }) {
+function SessionList({ user, canTerminate }: { user: User; canTerminate: boolean }) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const queryKey = ["admin", "users", user.id, "sessions"];
@@ -58,6 +66,7 @@ function SessionList({ user }: { user: User }) {
           <SessionCard
             key={s.id}
             session={s}
+            canTerminate={canTerminate}
             pending={terminate.isPending && terminate.variables === s.id}
             onTerminate={() => terminate.mutate(s.id!)}
           />
@@ -69,10 +78,12 @@ function SessionList({ user }: { user: User }) {
 
 function SessionCard({
   session: s,
+  canTerminate,
   pending,
   onTerminate,
 }: {
   session: Session;
+  canTerminate: boolean;
   pending: boolean;
   onTerminate: () => void;
 }) {
@@ -113,7 +124,7 @@ function SessionCard({
       </dl>
 
       {/* Joriy session'ni bu yerdan tugatib bo'lmaydi: buning uchun "Chiqish" bor. */}
-      {!s.current && (
+      {canTerminate && !s.current && (
         <div className="flex justify-end gap-2">
           {confirming ? (
             <>

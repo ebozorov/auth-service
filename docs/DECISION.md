@@ -42,7 +42,7 @@ Qarorlar kategoriya bo'yicha [`decisions/`](decisions/) papkasida yuritiladi. Bu
 | 15 | Rejimlar: dev, test va prod | [system](decisions/system.md) |
 | 16 | Jadvallar uchligi: `signin_requests` → `sessions` → `ended_sessions` | [database](decisions/database.md) |
 | 17 | API va web UI bitta binary ichida | [system](decisions/system.md) |
-| 18 | Dashboard: hamma uchun | [web](decisions/web.md) |
+| 18 | Dashboard va userlar bo'limi: hamma uchun | [web](decisions/web.md) |
 | 19 | API `/api/v1` ostida | [api](decisions/api.md) |
 | 20 | Web UI routing va stek | [web](decisions/web.md) |
 | 21 | ID'lar JSON'da string | [api](decisions/api.md) |

@@ -24,13 +24,18 @@ function storedCollapsed() {
   }
 }
 
-export function AdminLayout() {
-  const { t } = useI18n();
-  const [collapsed, setCollapsed] = useState(storedCollapsed);
-  const me = useQuery({
+// Joriy user. Layout uni yuklaydi, sahifalar keshdan oladi.
+export function useMe() {
+  return useQuery({
     queryKey: ["me"],
     queryFn: () => api<Schemas["User"]>("/auth/me"),
   });
+}
+
+export function AdminLayout() {
+  const { t } = useI18n();
+  const [collapsed, setCollapsed] = useState(storedCollapsed);
+  const me = useMe();
 
   if (me.isPending) return null;
   if (me.isError) return <Navigate to="/login" replace />;
