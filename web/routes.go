@@ -15,7 +15,10 @@ import (
 // not taken by other routes. Paths that are not files get index.html, so the React router
 // handles them (e.g. /users opened directly).
 func RegisterRoutes(router fiber.Router) error {
-	files := FS()
+	return registerRoutes(router, FS())
+}
+
+func registerRoutes(router fiber.Router, files fs.FS) error {
 	index, err := fs.ReadFile(files, "index.html")
 	if err != nil {
 		return fmt.Errorf("web: %w (run `make web-build`)", err)
@@ -37,6 +40,11 @@ func RegisterRoutes(router fiber.Router) error {
 			}
 			c.Type(path.Ext(name))
 			return c.Send(data)
+		}
+		// A missing asset is a 404, not index.html: an old tab asking for a file from the
+		// previous build would otherwise get HTML as JavaScript and show a blank page.
+		if strings.HasPrefix(name, "assets/") {
+			return fiber.ErrNotFound
 		}
 
 		c.Set(fiber.HeaderCacheControl, "no-cache")
