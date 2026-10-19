@@ -3,6 +3,7 @@ package auth
 import (
 	"testing"
 	"time"
+	"unsafe"
 )
 
 func TestIPLimiterLimit(t *testing.T) {
@@ -52,5 +53,21 @@ func TestIPLimiterSweepsOldWindows(t *testing.T) {
 	}
 	if len(l.hits) != 2 {
 		t.Fatalf("got %d entries, want 2", len(l.hits))
+	}
+}
+
+// Behind a proxy Fiber's c.IP() points into a buffer that the next request reuses.
+// The limiter must keep its own copy, or the counted IP changes under it.
+func TestIPLimiterCopiesIP(t *testing.T) {
+	l := newIPLimiter(newSettings(t, "sign_in_ip_limit: 1\n"))
+	buf := []byte("1.1.1.1")
+	l.Add(unsafe.String(&buf[0], len(buf)))
+	copy(buf, "2.2.2.2")
+
+	if !l.Exceeded("1.1.1.1") {
+		t.Fatal("the counted IP was lost when the buffer was reused")
+	}
+	if l.Exceeded("2.2.2.2") {
+		t.Fatal("the reused buffer's new IP is limited")
 	}
 }

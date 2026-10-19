@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -50,7 +51,9 @@ func (l *ipLimiter) Add(ip string) {
 	h, ok := l.hits[ip]
 	if !ok || now.Sub(h.start) >= window {
 		h = &ipHits{start: now}
-		l.hits[ip] = h
+		// Copied: behind a proxy the IP is the header value, which Fiber hands out
+		// without copying and reuses for the next request.
+		l.hits[strings.Clone(ip)] = h
 	}
 	h.count++
 
