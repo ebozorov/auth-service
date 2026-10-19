@@ -111,6 +111,7 @@ Commit qilinmaydi — user alohida so'rasa qilinadi.
 - **Fayllar tartibi:** har bir jadval (yoki bir-biriga bog'liq jadvallar guruhi) uchun alohida fayl, FK tartibida, `000000` dan boshlab. Ro'yxat: `docs/decisions/database.md`.
 - **Prod holati:** `docs/decisions/database.md` dagi "Prod holati" bo'limiga qara. Loyiha prod'ga chiqmagan bo'lsa, mavjud migratsiya fayllari to'g'ridan-to'g'ri tahrirlanadi. Chiqqan bo'lsa, chiqqan migratsiya o'zgartirilmaydi, yangi raqamli fayl qo'shiladi.
 - **Bir faylda bitta mantiqiy o'zgarish.** Fayl bitta multi-statement so'rov sifatida bajariladi, shuning uchun `CREATE INDEX CONCURRENTLY` va `REFRESH ... CONCURRENTLY` boshqa buyruqlar bilan bir faylda ishlamaydi — ular alohida faylga.
+- **Seed ma'lumot:** `INSERT` faqat `VALUES` bilan, har bir qator aniq yoziladi. `INSERT ... SELECT` (boshqa jadvaldan yig'ish, `CROSS JOIN` va h.k.) ishlatilmaydi — fayldan nima qo'shilayotgani to'liq ko'rinsin.
 - **ID:** `BIGINT PRIMARY KEY`, qiymatni ilova beradi (Sonyflake, 14-qaror), `DEFAULT` yo'q.
 - **Vaqt:** `TIMESTAMPTZ`, yaratilish vaqti `DEFAULT now()`.
 - **Ustun nomlari:** `requested_*` (so'rov), `started_*` (session boshi), `current_*` (oxirgi holat; IP va vaqt birga). `ended_sessions` ustunlari `sessions` bilan 1:1 bir xil nomda (`token_hash` dan tashqari) — `sessions` ga ustun qo'shilsa, `ended_sessions` ga ham qo'shiladi.

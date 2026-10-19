@@ -60,4 +60,12 @@ INSERT INTO roles (key, name) VALUES
     ('admin', 'Administrator'),
     ('user',  'User');
 
-INSERT INTO role_permissions (role, permission) SELECT 'admin', key FROM permissions;
+INSERT INTO role_permissions (role, permission) VALUES
+    ('admin', 'user:c'),
+    ('admin', 'user:r'),
+    ('admin', 'user:u'),
+    ('admin', 'user:d'),
+    ('admin', 'role:c'),
+    ('admin', 'role:r'),
+    ('admin', 'role:u'),
+    ('admin', 'role:d');

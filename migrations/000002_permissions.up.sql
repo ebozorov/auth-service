@@ -13,6 +13,12 @@ CREATE TABLE permissions (
     UNIQUE (resource, action)
 );
 
-INSERT INTO permissions (key, resource, action, name)
-SELECT r.key || ':' || a.key, r.key, a.key, a.name || ' ' || lower(r.name)
-FROM resources r CROSS JOIN actions a;
+INSERT INTO permissions (key, resource, action, name) VALUES
+    ('user:c', 'user', 'c', 'Create users'),
+    ('user:r', 'user', 'r', 'Read users'),
+    ('user:u', 'user', 'u', 'Update users'),
+    ('user:d', 'user', 'd', 'Delete users'),
+    ('role:c', 'role', 'c', 'Create roles'),
+    ('role:r', 'role', 'r', 'Read roles'),
+    ('role:u', 'role', 'u', 'Update roles'),
+    ('role:d', 'role', 'd', 'Delete roles');
