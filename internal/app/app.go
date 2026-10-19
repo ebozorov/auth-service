@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"auth-service/internal"
-	"auth-service/internal/admin"
 	"auth-service/internal/auth"
 	"auth-service/internal/home"
 	"auth-service/internal/mailer"
@@ -133,7 +132,7 @@ func New(cfg *internal.Config) (*Server, error) {
 	}
 	auth.RegisterRoutes(api, authHandler)
 	session.RegisterRoutes(api, session.NewHandler(sessions), authHandler.RequireAuth)
-	admin.RegisterRoutes(api, admin.NewHandler(users, sessions), authHandler.RequireAuth)
+	user.RegisterRoutes(api, user.NewHandler(users, sessions), authHandler.RequireAuth)
 	// Last: the web UI answers every path not taken above.
 	if err := web.RegisterRoutes(app); err != nil {
 		return nil, fmt.Errorf("web: %w", err)

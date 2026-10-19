@@ -48,7 +48,7 @@ Qarorlar kategoriya bo'yicha [`decisions/`](decisions/) papkasida yuritiladi. Bu
 | 21 | ID'lar JSON'da string | [api](decisions/api.md) |
 | 22 | ID turlari: `int64` va `internal.ID` | [models](decisions/models.md) |
 | 23 | Dashboard ma'lumotlari materialized view'da | [database](decisions/database.md) |
-| 24 | Rollar va permissionlar: rol hardcoded (`admin`, `user`), permissionlar boshqa servisda | [database](decisions/database.md) |
+| 24 | Rollar va permissionlar: rol hardcoded, `admin` o'zgartiradi, `user` faqat o'qiydi; permissionlar boshqa servisda | [database](decisions/database.md) |
 | 25 | Dinamik sozlamalar: fayl va qayta yuklash | [system](decisions/system.md) |
 
 ## Ochiq savollar

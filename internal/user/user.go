@@ -7,6 +7,7 @@ import (
 
 	"auth-service/internal"
 
+	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -35,6 +36,20 @@ type User struct {
 
 func IsValidRole(role string) bool {
 	return role == RoleAdmin || role == RoleUser
+}
+
+// Allowed reports whether the role may make a request with the method (docs/DECISION.md #24):
+// admin may do everything, user may only read (GET), any other role nothing.
+func Allowed(role, method string) bool {
+	switch role {
+	case RoleAdmin:
+		return true
+	case RoleUser:
+		// Fiber's Get also answers HEAD.
+		return method == fiber.MethodGet || method == fiber.MethodHead
+	default:
+		return false
+	}
 }
 
 // NormalizeEmail returns the form stored in users.email: trimmed and lowercase.

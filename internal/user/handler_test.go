@@ -1,4 +1,4 @@
-package admin
+package user
 
 import (
 	"net/http/httptest"
@@ -10,8 +10,34 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+func TestAllowed(t *testing.T) {
+	for _, tc := range []struct {
+		role, method string
+		want         bool
+	}{
+		{RoleAdmin, fiber.MethodGet, true},
+		{RoleAdmin, fiber.MethodPost, true},
+		{RoleAdmin, fiber.MethodPatch, true},
+		{RoleAdmin, fiber.MethodDelete, true},
+		{RoleUser, fiber.MethodGet, true},
+		{RoleUser, fiber.MethodHead, true},
+		{RoleUser, fiber.MethodPost, false},
+		{RoleUser, fiber.MethodPatch, false},
+		{RoleUser, fiber.MethodPut, false},
+		{RoleUser, fiber.MethodDelete, false},
+		{"", fiber.MethodGet, false},
+		{"Admin", fiber.MethodGet, false},
+		{"auditor", fiber.MethodGet, false},
+		{"auditor", fiber.MethodPost, false},
+	} {
+		if got := Allowed(tc.role, tc.method); got != tc.want {
+			t.Errorf("%q %s: got %v, want %v", tc.role, tc.method, got, tc.want)
+		}
+	}
+}
+
 // These cover the checks made before the database is touched;
-// RequireAdmin and the rest are left to the integration tests.
+// Authorize and the rest are left to the integration tests.
 
 func newTestApp() *fiber.App {
 	h := NewHandler(nil, nil)
@@ -20,14 +46,14 @@ func newTestApp() *fiber.App {
 		internal.SetIdentity(c, 1, 1)
 		return c.Next()
 	})
-	app.Post("/users", h.CreateUser)
-	app.Patch("/users/:id", h.UpdateUser)
+	app.Post("/users", h.Create)
+	app.Patch("/users/:id", h.Update)
 	app.Get("/users/:id/sessions", h.ListSessions)
 	app.Delete("/users/:id/sessions/:sid", h.TerminateSession)
 	return app
 }
 
-func TestCreateUserValidates(t *testing.T) {
+func TestCreateValidates(t *testing.T) {
 	app := newTestApp()
 	for name, tc := range map[string]struct {
 		body, msg string

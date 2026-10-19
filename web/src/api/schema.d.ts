@@ -358,7 +358,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/users": {
+    "/users": {
         parameters: {
             query?: never;
             header?: never;
@@ -424,7 +424,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/users/{id}": {
+    "/users/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -473,7 +473,7 @@ export interface paths {
         };
         trace?: never;
     };
-    "/admin/users/{id}/sessions": {
+    "/users/{id}/sessions": {
         parameters: {
             query?: never;
             header?: never;
@@ -514,7 +514,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/users/{id}/sessions/{sid}": {
+    "/users/{id}/sessions/{sid}": {
         parameters: {
             query?: never;
             header?: never;

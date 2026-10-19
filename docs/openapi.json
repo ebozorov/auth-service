@@ -18,8 +18,8 @@
       "name": "Sessions"
     },
     {
-      "name": "Admin",
-      "description": "Faqat `role = admin` uchun"
+      "name": "Users",
+      "description": "Ruxsat rol bo'yicha: `admin` hamma amalni bajaradi, `user` faqat o'qiydi (GET), boshqa rol uchun 403"
     }
   ],
   "paths": {
@@ -342,10 +342,10 @@
         }
       }
     },
-    "/admin/users": {
+    "/users": {
       "get": {
         "tags": [
-          "Admin"
+          "Users"
         ],
         "summary": "Userlar ro'yxati",
         "security": [
@@ -377,7 +377,7 @@
       },
       "post": {
         "tags": [
-          "Admin"
+          "Users"
         ],
         "summary": "User qo'shish",
         "security": [
@@ -421,10 +421,10 @@
         }
       }
     },
-    "/admin/users/{id}": {
+    "/users/{id}": {
       "patch": {
         "tags": [
-          "Admin"
+          "Users"
         ],
         "summary": "Userni o'zgartirish",
         "description": "`enabled = false` qilinsa, userning barcha sessionlari tugatiladi. User o'chirilmaydi.",
@@ -480,10 +480,10 @@
         }
       }
     },
-    "/admin/users/{id}/sessions": {
+    "/users/{id}/sessions": {
       "get": {
         "tags": [
-          "Admin"
+          "Users"
         ],
         "summary": "Userning qurilmalari",
         "security": [
@@ -528,10 +528,10 @@
         }
       }
     },
-    "/admin/users/{id}/sessions/{sid}": {
+    "/users/{id}/sessions/{sid}": {
       "delete": {
         "tags": [
-          "Admin"
+          "Users"
         ],
         "summary": "Userning qurilmasini tugatish",
         "security": [

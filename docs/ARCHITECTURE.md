@@ -27,17 +27,17 @@ Barcha API endpointlari `/api/v1` prefiksi ostida: quyidagi jadvallarda prefiks 
 | `POST` | `/auth/logout` | Joriy sessionni tugatish, refresh token cookie'sini o'chirish |
 | `GET` | `/auth/me` | Joriy foydalanuvchi |
 
-### Admin
+### Userlar
 
-Faqat `role = admin` uchun. Birinchi admin `INITIAL_ADMIN_EMAIL` dan yaratiladi.
+Endpoint resursni bildiradi, ruxsat ichkarida rol bo'yicha tekshiriladi (24-qaror): `admin` hamma amalni bajaradi, `user` faqat o'qiydi (`GET`), boshqa rol uchun 403. Rol har so'rovda bazadan o'qiladi. Birinchi admin `INITIAL_ADMIN_EMAIL` dan yaratiladi.
 
 | Metod | Endpoint | Tavsif |
 |---|---|---|
-| `GET` | `/admin/users` | Userlar ro'yxati |
-| `POST` | `/admin/users` | User qo'shish (email, ism, rol) |
-| `PATCH` | `/admin/users/{id}` | Ism, rol, `enabled` ni o'zgartirish |
-| `GET` | `/admin/users/{id}/sessions` | Userning qurilmalari |
-| `DELETE` | `/admin/users/{id}/sessions/{sid}` | Userning qurilmasini tugatish |
+| `GET` | `/users` | Userlar ro'yxati |
+| `POST` | `/users` | User qo'shish (email, ism, rol) |
+| `PATCH` | `/users/{id}` | Ism, rol, `enabled` ni o'zgartirish |
+| `GET` | `/users/{id}/sessions` | Userning qurilmalari |
+| `DELETE` | `/users/{id}/sessions/{sid}` | Userning qurilmasini tugatish |
 
 ### Sessionlar
 
@@ -78,8 +78,7 @@ internal/
 ├── api.go             API prefiksi (/api/v1)
 ├── auth/              /auth: sign-in, magic link, refresh, JWT, IP limit
 ├── session/           /sessions: qurilmalar, arxivga ko'chirish
-├── admin/             /admin: userlar va ularning qurilmalari
-├── user/              users jadvali (handler'siz)
+├── user/              /users: userlar, ularning qurilmalari, rol bo'yicha ruxsat
 ├── mailer/            SMTP orqali email
 └── home/              /api/v1/, /api/v1/openapi.json, /.well-known/*, /swagger-ui/
 web/                   web UI (React): build web/dist ga tushadi va binary ichiga embed qilinadi

@@ -45,11 +45,11 @@ function UserForm({ user, onDone }: { user: User | null; onDone: () => void }) {
   const save = useMutation({
     mutationFn: () =>
       user
-        ? api<User>(`/admin/users/${user.id}`, {
+        ? api<User>(`/users/${user.id}`, {
             method: "PATCH",
             body: JSON.stringify({ name, role, enabled } satisfies Schemas["UpdateUserRequest"]),
           })
-        : api<User>("/admin/users", {
+        : api<User>("/users", {
             method: "POST",
             body: JSON.stringify({ email, name, role } satisfies Schemas["CreateUserRequest"]),
           }),

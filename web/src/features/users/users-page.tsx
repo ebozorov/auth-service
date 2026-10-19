@@ -20,7 +20,7 @@ export function UsersPage() {
   const [formTarget, setFormTarget] = useState<UserFormTarget>(null);
   const users = useQuery({
     queryKey: ["admin", "users"],
-    queryFn: () => api<User[]>("/admin/users"),
+    queryFn: () => api<User[]>("/users"),
   });
 
   const columns = useMemo(

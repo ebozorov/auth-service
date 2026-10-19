@@ -38,10 +38,10 @@ function SessionList({ user }: { user: User }) {
   const queryKey = ["admin", "users", user.id, "sessions"];
   const sessions = useQuery({
     queryKey,
-    queryFn: () => api<Session[]>(`/admin/users/${user.id}/sessions`),
+    queryFn: () => api<Session[]>(`/users/${user.id}/sessions`),
   });
   const terminate = useMutation({
-    mutationFn: (sid: string) => api<void>(`/admin/users/${user.id}/sessions/${sid}`, { method: "DELETE" }),
+    mutationFn: (sid: string) => api<void>(`/users/${user.id}/sessions/${sid}`, { method: "DELETE" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey }),
   });
 

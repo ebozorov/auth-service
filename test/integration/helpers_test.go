@@ -178,7 +178,7 @@ func uniqueEmail(t *testing.T) string {
 func createUser(t *testing.T, role string) user {
 	t.Helper()
 	ad := admin(t)
-	r := ad.c.do("POST", "/admin/users", map[string]string{"email": uniqueEmail(t), "name": "Test User", "role": role}, ad.tok.AccessToken)
+	r := ad.c.do("POST", "/users", map[string]string{"email": uniqueEmail(t), "name": "Test User", "role": role}, ad.tok.AccessToken)
 	expectStatus(t, r, http.StatusCreated)
 	var u user
 	r.json(t, &u)
@@ -218,7 +218,7 @@ func admin(t *testing.T) *adminSession {
 func setEnabled(t *testing.T, userID string, enabled bool) {
 	t.Helper()
 	ad := admin(t)
-	r := ad.c.do("PATCH", "/admin/users/"+userID, map[string]bool{"enabled": enabled}, ad.tok.AccessToken)
+	r := ad.c.do("PATCH", "/users/"+userID, map[string]bool{"enabled": enabled}, ad.tok.AccessToken)
 	expectStatus(t, r, http.StatusOK)
 }
 

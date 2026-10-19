@@ -1,4 +1,4 @@
-package admin
+package user
 
 import (
 	"errors"
@@ -7,18 +7,18 @@ import (
 
 	"auth-service/internal"
 	"auth-service/internal/session"
-	"auth-service/internal/user"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-// Handler serves /admin: managing users and their devices (docs/DECISION.md #9).
+// Handler serves /users: users and their devices (docs/DECISION.md #9).
+// Who may do what is decided by Authorize (#24).
 type Handler struct {
-	users    *user.Service
+	users    *Service
 	sessions *session.Service
 }
 
-func NewHandler(users *user.Service, sessions *session.Service) *Handler {
+func NewHandler(users *Service, sessions *session.Service) *Handler {
 	return &Handler{users: users, sessions: sessions}
 }
 
@@ -35,20 +35,21 @@ type updateUserBody struct {
 	Enabled *bool   `json:"enabled"`
 }
 
-// RequireAdmin lets only admins through. The role is read from the database on every
-// request, so a role change takes effect right away. Use after auth.RequireAuth.
-func (h *Handler) RequireAdmin(c *fiber.Ctx) error {
+// Authorize lets the request through if the caller's role allows its method (see Allowed).
+// The role is read from the database on every request, so a role change takes effect
+// right away. Use after auth.RequireAuth.
+func (h *Handler) Authorize(c *fiber.Ctx) error {
 	u, err := h.users.Get(internal.UserID(c))
-	if err != nil && !errors.Is(err, user.ErrNotFound) {
+	if err != nil && !errors.Is(err, ErrNotFound) {
 		return err
 	}
-	if u == nil || u.Role != user.RoleAdmin {
-		return fiber.NewError(fiber.StatusForbidden, "admin only")
+	if u == nil || !Allowed(u.Role, c.Method()) {
+		return fiber.NewError(fiber.StatusForbidden, "forbidden")
 	}
 	return c.Next()
 }
 
-func (h *Handler) ListUsers(c *fiber.Ctx) error {
+func (h *Handler) List(c *fiber.Ctx) error {
 	users, err := h.users.List()
 	if err != nil {
 		return err
@@ -56,26 +57,26 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 	return c.JSON(users)
 }
 
-func (h *Handler) CreateUser(c *fiber.Ctx) error {
+func (h *Handler) Create(c *fiber.Ctx) error {
 	var body createUserBody
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
 	}
 	if body.Role == "" {
-		body.Role = user.RoleUser
+		body.Role = RoleUser
 	}
-	if _, err := mail.ParseAddress(user.NormalizeEmail(body.Email)); err != nil {
+	if _, err := mail.ParseAddress(NormalizeEmail(body.Email)); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid email")
 	}
 	if strings.TrimSpace(body.Name) == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "name is required")
 	}
-	if !user.IsValidRole(body.Role) {
+	if !IsValidRole(body.Role) {
 		return fiber.NewError(fiber.StatusBadRequest, "role must be admin or user")
 	}
 
 	u, err := h.users.Create(body.Email, body.Name, body.Role)
-	if errors.Is(err, user.ErrEmailTaken) {
+	if errors.Is(err, ErrEmailTaken) {
 		return fiber.NewError(fiber.StatusConflict, err.Error())
 	}
 	if err != nil {
@@ -84,9 +85,9 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(u)
 }
 
-// UpdateUser changes name, role or enabled. A disabled user loses all sessions
+// Update changes name, role or enabled. A disabled user loses all sessions
 // (docs/DECISION.md #7). Admins cannot demote or disable themselves, so at least one admin remains.
-func (h *Handler) UpdateUser(c *fiber.Ctx) error {
+func (h *Handler) Update(c *fiber.Ctx) error {
 	u, err := h.userFromParam(c)
 	if err != nil {
 		return err
@@ -97,8 +98,8 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
 	}
 
-	adminID := internal.UserID(c)
-	isSelf := u.ID == adminID
+	callerID := internal.UserID(c)
+	isSelf := u.ID == callerID
 	if body.Name != nil {
 		if strings.TrimSpace(*body.Name) == "" {
 			return fiber.NewError(fiber.StatusBadRequest, "name is required")
@@ -106,10 +107,10 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 		u.Name = strings.TrimSpace(*body.Name)
 	}
 	if body.Role != nil {
-		if !user.IsValidRole(*body.Role) {
+		if !IsValidRole(*body.Role) {
 			return fiber.NewError(fiber.StatusBadRequest, "role must be admin or user")
 		}
-		if isSelf && *body.Role != user.RoleAdmin {
+		if isSelf && *body.Role != RoleAdmin {
 			return fiber.NewError(fiber.StatusBadRequest, "you cannot remove your own admin role")
 		}
 		u.Role = *body.Role
@@ -125,7 +126,7 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 		return err
 	}
 	if !u.Enabled {
-		ended := session.EndedBy(session.ReasonDisabled, adminID, internal.SessionID(c))
+		ended := session.EndedBy(session.ReasonDisabled, callerID, internal.SessionID(c))
 		if _, err := h.sessions.EndAll(u.ID, ended); err != nil {
 			return err
 		}
@@ -167,13 +168,13 @@ func (h *Handler) TerminateSession(c *fiber.Ctx) error {
 }
 
 // userFromParam loads the user from the :id path parameter, or returns 404.
-func (h *Handler) userFromParam(c *fiber.Ctx) (*user.User, error) {
+func (h *Handler) userFromParam(c *fiber.Ctx) (*User, error) {
 	id, err := internal.ParamID(c, "id")
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusNotFound, user.ErrNotFound.Error())
+		return nil, fiber.NewError(fiber.StatusNotFound, ErrNotFound.Error())
 	}
 	u, err := h.users.Get(id)
-	if errors.Is(err, user.ErrNotFound) {
+	if errors.Is(err, ErrNotFound) {
 		return nil, fiber.NewError(fiber.StatusNotFound, err.Error())
 	}
 	return u, err

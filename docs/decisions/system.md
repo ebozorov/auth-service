@@ -8,10 +8,10 @@ Ishxona xodimlari uchun ichki tizim. Userlar oldindan kiritiladi. O'zi ro'yxatda
 
 ## 9. Admin va userlarni kiritish (Keycloak kabi)
 
-- Har bir userda bitta rol bo'ladi (`users.role`): `admin` (to'liq ruxsat) yoki `user`. Rollar hardcoded, permissionlar bu servisda yo'q: 24-qaror ([database](database.md)).
+- Har bir userda bitta rol bo'ladi (`users.role`): `admin` (to'liq ruxsat) yoki `user` (faqat o'qish). Rollar hardcoded, permissionlar bu servisda yo'q: 24-qaror ([database](database.md)).
 - Birinchi admin server ishga tushganda yaratiladi. Bazada birorta ham admin bo'lmasa, `INITIAL_ADMIN_EMAIL` (va `INITIAL_ADMIN_NAME`) dan foydalaniladi. Admin bor bo'lsa, bu o'zgaruvchilar e'tiborga olinmaydi. `APP_ENV=dev` da `INITIAL_ADMIN_EMAIL` standart qiymati `admin@localhost` (server `make` siz ishga tushirilganda ham ishlashi uchun), test va prod da standart qiymat yo'q.
 - Birinchi admin ham boshqalar kabi email orqali magic link bilan kiradi.
-- Keyingi userlarni admin API orqali qo'shadi, o'zgartiradi, o'chiradi (`enabled = false`) va ularning sessionlarini tugatadi.
+- Keyingi userlarni admin `/users` API orqali qo'shadi, o'zgartiradi, o'chiradi (`enabled = false`) va ularning sessionlarini tugatadi.
 
 ## 10. Limitlar — environment variable orqali
 
@@ -92,7 +92,7 @@ test/integration/
 ├── signin_test.go      sign-in: app va brauzer oqimi, link, limitlar
 ├── tokens_test.go      refresh, logout, JWKS orqali tekshirish, info
 ├── sessions_test.go
-└── admin_test.go
+└── users_test.go       /users: rol bo'yicha ruxsat, admin amallari
 ```
 
 Flag bo'lmasa faqat unit testlar ishlaydi. Integration testlar flag bilan yoqiladi:
