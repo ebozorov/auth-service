@@ -27,6 +27,8 @@ Migratsiyalar har bir jadval (yoki bir-biriga bog'liq jadvallar guruhi) uchun al
 | `000004_users` | `users` |
 | `000005_sessions` | `signin_requests`, `sessions`, `ended_sessions` (16-qaror) |
 
+**Prod holati:** loyiha hali prod'ga chiqmagan. Shuning uchun sxema o'zgarganda mavjud migratsiya fayllari to'g'ridan-to'g'ri tahrirlanadi, yangi raqamli fayl qo'shilmaydi. Prod'ga chiqqach, bu yerga sana yoziladi. Shundan keyin chiqqan migratsiyalar o'zgartirilmaydi, har bir o'zgarish yangi raqamli faylda bo'ladi.
+
 ## 5. Session = device (Telegram kabi)
 
 - Alohida `devices` jadvali yo'q. Har bir session bitta qurilma hisoblanadi.

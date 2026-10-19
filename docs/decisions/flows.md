@@ -55,7 +55,7 @@ bering" deb so'rashi mumkin, OTP ham aynan shu sabab bilan olib tashlangan.
 ## 8. Brute force himoyasi
 
 - **Linkni taxmin qilish:** token uzun va tasodifiy, ustiga `device_secret` ham kerak, shuning uchun taxmin qilib bo'lmaydi. Noto'g'ri link urinishlari ham IP limitiga hisoblanadi.
-- **Ko'p so'rov:** bitta userga vaqt birligida cheklangan son so'rov (`user_id, created_at` indeksi orqali), IP bo'yicha ham limit (11-qaror, [system](system.md)). Limit qiymatlari: 10-qaror ([system](system.md)).
+- **Ko'p so'rov:** bitta userga vaqt birligida cheklangan son so'rov (`signin_requests` dagi `user_id, requested_at` indeksi orqali), IP bo'yicha ham limit (11-qaror, [system](system.md)). Limit qiymatlari: 10-qaror ([system](system.md)).
 - **Login qilgan qurilma:** sessionni tugatish orqali.
 
 ## 12. Brauzerda tokenlar: `HttpOnly` cookie va redirect

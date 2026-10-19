@@ -96,7 +96,7 @@ Commit qilinmaydi — user alohida so'rasa qilinadi.
 
 - **Ustun turlari:** `TEXT` vs `BYTEA` (hashlar), `INET`, `TIMESTAMPTZ` (`TIMESTAMP` emas), `JSONB` ichidagi narsa alohida ustun bo'lishi kerakmasmi (filtr, guruhlash, indeks kerak bo'lsa — ustun).
 - **NULL:** har bir nullable ustun uchun "qachon NULL bo'ladi?" — javob bo'lmasa, `NOT NULL`.
-- **CHECK:** qiymat chegaralari (`role IN (...)`), vaqt tartibi (`expires_at > started_at`), bo'sh satr (`name <> ''`), format (hash uzunligi), JSONB shakli (`jsonb_typeof`, kalitlar).
+- **CHECK:** faqat kritik invariantlar uchun taklif qilinadi (buzilsa xavfsizlik yoki ma'lumot to'g'riligi buziladi). Oddiy input validation (bo'sh satr, format, vaqt tartibi, JSONB shakli, hash uzunligi) ilovada qoladi va taklif qilinmaydi.
 - **UNIQUE va kalitlar:** biznes-kalit (email) unique'mi; normalizatsiya (`lower`) DB'da tekshiriladimi.
 - **FK va `ON DELETE`:** `CASCADE` nimani o'chirib yuboradi? Arxiv/audit jadvallari uchun odatda `RESTRICT`. JSONB ichidagi ID'lar FK'siz qolishini hisobga ol.
 - **Indekslar:** har bir kutilayotgan so'rov (`WHERE`, `ORDER BY`, tozalash, dashboard) indeks bilan qoplanganmi; ortiqcha indeks yo'qmi. Kichik jadvalda seq scan normal — buni ham ayt.
@@ -108,7 +108,8 @@ Commit qilinmaydi — user alohida so'rasa qilinadi.
 
 - **Vosita:** `golang-migrate`, PostgreSQL 17. Migratsiyalar server ishga tushganda avtomatik qo'llanadi (`m.Up()`).
 - **Fayl nomi:** `NNNNNN_nom.up.sql` va juft `NNNNNN_nom.down.sql` (6 xonali raqam, `snake_case` nom). Har bir `up` ning `down` i bo'ladi va teskari tartibda bekor qiladi (`IF EXISTS` bilan).
-- **Prod'ga chiqqan migratsiya o'zgartirilmaydi** — yangi raqamli fayl qo'shiladi. Chiqmagan bo'lsa, `000001_init` ni tahrirlash mumkinligini userdan so'ra.
+- **Fayllar tartibi:** har bir jadval (yoki bir-biriga bog'liq jadvallar guruhi) uchun alohida fayl, FK tartibida, `000000` dan boshlab. Ro'yxat: `docs/decisions/database.md`.
+- **Prod holati:** `docs/decisions/database.md` dagi "Prod holati" bo'limiga qara. Loyiha prod'ga chiqmagan bo'lsa, mavjud migratsiya fayllari to'g'ridan-to'g'ri tahrirlanadi. Chiqqan bo'lsa, chiqqan migratsiya o'zgartirilmaydi, yangi raqamli fayl qo'shiladi.
 - **Bir faylda bitta mantiqiy o'zgarish.** Fayl bitta multi-statement so'rov sifatida bajariladi, shuning uchun `CREATE INDEX CONCURRENTLY` va `REFRESH ... CONCURRENTLY` boshqa buyruqlar bilan bir faylda ishlamaydi — ular alohida faylga.
 - **ID:** `BIGINT PRIMARY KEY`, qiymatni ilova beradi (Sonyflake, 14-qaror), `DEFAULT` yo'q.
 - **Vaqt:** `TIMESTAMPTZ`, yaratilish vaqti `DEFAULT now()`.
