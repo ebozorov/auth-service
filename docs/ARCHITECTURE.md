@@ -66,8 +66,9 @@ Swagger'da ko'rinmaydi.
 Package by feature: har bir endpoint guruhi o'z papkasida.
 
 ```
-cmd/server/main.go     kirish nuqtasi
+cmd/server/main.go     kirish nuqtasi: config yuklaydi, app.New, signal kutadi
 internal/
+├── app/               serverni yig'adi (app.New): baza, migrationlar, route'lar
 ├── config.go          statik sozlamalar (env)
 ├── dynamic.go         dinamik sozlamalar (config/config.yaml, o'zgarsa qayta o'qiladi)
 ├── database.go        ulanish, migrationlar
