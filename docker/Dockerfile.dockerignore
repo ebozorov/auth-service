@@ -1,0 +1,14 @@
+# docker/Dockerfile uchun (BuildKit): context'ga faqat build uchun keraklilar kiradi
+*
+!go.mod
+!go.sum
+!cmd/
+!internal/
+!migrations/
+!docs/openapi.json
+!config/config.yaml
+!web/
+web/node_modules/
+web/dist/
+web/tsconfig.tsbuildinfo
+**/*_test.go

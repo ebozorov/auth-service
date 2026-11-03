@@ -65,6 +65,8 @@ Server env faylni o'zi o'qimaydi: lokal rejimda `config/.env.local` ni `make` yu
 | `make stop` / `make status` | serverni to'xtatish / holatini ko'rish |
 | `make reload` | graceful restart: joriy so'rovlar tugaydi, server yangi env bilan qayta ishga tushadi (`config/config.yaml` uchun kerak emas) |
 | `make services-up` / `services-down` / `services-status` | `docker/compose.yaml` dagi servicelar: PostgreSQL, Mailpit (UI: http://localhost:8025) |
+| `make build-image` | `docker/Dockerfile` dan image: `auth-service:<versiya>` va `auth-service:latest` |
+| `make compose-up` / `compose-down` | `docker/compose.app.yaml`: tayyor image, PostgreSQL, Mailpit birga, to'liq sinov uchun; `certs/` bind qilinadi |
 | `make keys` | `JWT_PRIVATE_KEY_PATH` ga RSA private key yaratish (mavjud bo'lsa tegmaydi) |
 | `make swagger-ui` | Swagger UI fayllarini yuklash |
 | `make web-install` | web UI paketlarini o'rnatish (`npm ci`) |

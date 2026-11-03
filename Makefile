@@ -16,7 +16,11 @@ LOG_FILE := $(LOG_DIR)/auth-service.log
 PRIVATE_KEY := $(or $(JWT_PRIVATE_KEY_PATH),certs/private.pem)
 KEYS_DIR    := $(dir $(PRIVATE_KEY))
 
-COMPOSE_FILE := docker/compose.yaml
+COMPOSE_FILE     := docker/compose.yaml
+COMPOSE_APP_FILE := docker/compose.app.yaml
+
+IMAGE     := auth-service
+IMAGE_TAG := $(shell sed -n 's/^[[:space:]]*Version[[:space:]]*= "\(.*\)"/\1/p' internal/app/app.go)
 
 # Vite dev server manzili (web/vite.config.ts dagi port bilan bir xil)
 WEB_DEV_URL := http://localhost:5173
@@ -28,11 +32,15 @@ SWAGGER_UI_FILES     := index.html index.css swagger-ui.css swagger-ui-bundle.js
 
 RUNNING := [ -f $(PID_FILE) ] && kill -0 $$(cat $(PID_FILE)) 2>/dev/null
 
-.PHONY: build dev start stop reload status services-up services-down services-status keys swagger-ui web-install web-dev web-build web-types web-test test check
+.PHONY: build build-image compose-up compose-down dev start stop reload status services-up services-down services-status keys swagger-ui web-install web-dev web-build web-types web-test test check
 
 # web/dist binary ichiga embed qilinadi, shuning uchun avval web build bo'ladi
 build: web-build
 	go build -o $(BIN) ./cmd/server
+
+# Docker image: docker/Dockerfile, context — repo ildizi. Teglar: versiya (internal/app/app.go) va latest.
+build-image:
+	docker build -f docker/Dockerfile -t $(IMAGE):$(IMAGE_TAG) -t $(IMAGE):latest .
 
 keys: $(PRIVATE_KEY)
 
@@ -130,6 +138,14 @@ services-up:
 
 services-down:
 	docker compose -f $(COMPOSE_FILE) down
+
+# Tayyor loyihani to'liq sinash ($(COMPOSE_APP_FILE)): image (make build-image), postgres, mailpit;
+# certs/ bind qilinadi. Konteyner host user nomidan ishlaydi, aks holda 600 huquqli kalitni o'qiy olmaydi.
+compose-up: keys
+	HOST_UID=$$(id -u) HOST_GID=$$(id -g) docker compose -f $(COMPOSE_APP_FILE) up -d --wait
+
+compose-down:
+	docker compose -f $(COMPOSE_APP_FILE) down
 
 services-status:
 	docker compose -f $(COMPOSE_FILE) ps
