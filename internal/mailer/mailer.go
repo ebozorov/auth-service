@@ -2,7 +2,7 @@ package mailer
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"mime"
 	"net"
 	"net/smtp"
@@ -28,11 +28,12 @@ func New(cfg Config) *Mailer {
 	return &Mailer{cfg: cfg}
 }
 
-// Send delivers one email. Without SMTP_HOST (dev/test) the email is only
-// written to the log, so sign-in links can be copied from there.
+// Send delivers one email. Without SMTP_HOST the email is only written to the log, so
+// sign-in links can be copied from there. The body holds a one-time link, so config
+// allows this only in dev (docs/DECISION.md #13, #26).
 func (m *Mailer) Send(to, subject, body string) error {
 	if m.cfg.Host == "" {
-		log.Printf("email (SMTP_HOST bo'sh, faqat logga yozildi)\nto: %s\nsubject: %s\n\n%s", to, subject, body)
+		slog.Warn("email yuborilmadi, faqat logga yozildi (SMTP_HOST bo'sh)", "to", to, "subject", subject, "body", body)
 		return nil
 	}
 

@@ -3,7 +3,7 @@ package auth
 import (
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/mail"
 	"net/url"
 	"time"
@@ -92,11 +92,13 @@ func (h *Handler) startSignIn(email, secretHash string, device session.Device, i
 	}
 
 	// Sent in the background, so the response time does not show whether the email exists.
-	go h.sendLink(u.Email, token, settings.SignInRequestTTL)
+	go h.sendLink(u.ID, u.Email, token, settings.SignInRequestTTL)
 	return nil
 }
 
-func (h *Handler) sendLink(email, token string, ttl time.Duration) {
+// sendLink emails the link. A failure is logged with the user id: the address and the
+// link stay out of the log (docs/DECISION.md #26).
+func (h *Handler) sendLink(userID int64, email, token string, ttl time.Duration) {
 	link := h.cfg.PublicURL + internal.APIPrefix + "/auth/sign-in/link?token=" + url.QueryEscape(token)
 	body := fmt.Sprintf(
 		"Tizimga kirish uchun linkni oching:\n\n%s\n\n"+
@@ -105,7 +107,7 @@ func (h *Handler) sendLink(email, token string, ttl time.Duration) {
 		link, int(ttl.Minutes()))
 
 	if err := h.mailer.Send(email, "Tizimga kirish", body); err != nil {
-		log.Printf("sign-in email to %s: %v", email, err)
+		slog.Error("sign-in email yuborilmadi", "user_id", userID, "error", err)
 	}
 }
 

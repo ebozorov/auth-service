@@ -5,7 +5,7 @@ package app
 import (
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"strconv"
 	"time"
@@ -20,7 +20,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 )
@@ -52,7 +51,7 @@ func New(cfg *internal.Config) (*Server, error) {
 	}
 	// Without a watch the server still runs, only with the values read at startup.
 	if err := settings.Watch(); err != nil {
-		log.Printf("dynamic config: %s kuzatilmaydi: %v", cfg.ConfigFile, err)
+		slog.Warn("dynamic config: fayl kuzatilmaydi", "path", cfg.ConfigFile, "error", err)
 	}
 
 	db, err := internal.ConnectDB(cfg.DatabaseURL)
@@ -110,19 +109,12 @@ func New(cfg *internal.Config) (*Server, error) {
 		ProxyHeader:           proxyHeader(cfg.TrustProxy),
 		DisableStartupMessage: true,
 	})
-	app.Use(recover.New())
-	// rid ties the request log to other logs of the same request; requestid must run before logger.
+	// request_id ties the request log to other logs of the same request; requestid must run before the logger.
 	// An X-Request-ID from upstream is kept; otherwise a Sonyflake id, time-ordered like the other ids.
 	app.Use(requestid.New(requestid.Config{Generator: newRequestID}))
-	app.Use(logger.New(logger.Config{
-		Format: "${time} | ${latency} | ${ip} | ${locals:requestid} | ${status} | ${method} | ${path} | ${error}\n",
-		CustomTags: map[string]logger.LogFunc{
-			logger.TagMethod: logMethod,
-			logger.TagIP:     logIP,
-			logger.TagPath:   logPath,
-			logger.TagError:  logErrorOrSize,
-		},
-	}))
+	app.Use(logRequest)
+	// After the logger: a panic becomes an error that the request log shows.
+	app.Use(recover.New())
 	// gzip/br/deflate by Accept-Encoding; JSON shrinks ~15x.
 	app.Use(compress.New())
 
@@ -171,7 +163,7 @@ func ensureAdmin(users *user.Service, cfg *internal.Config) error {
 		return err
 	}
 	if created {
-		log.Printf("birinchi admin yaratildi: %s", cfg.InitialAdminEmail)
+		slog.Info("birinchi admin yaratildi", "email", internal.MaskEmail(cfg.InitialAdminEmail))
 	}
 	return nil
 }
@@ -180,10 +172,10 @@ func ensureAdmin(users *user.Service, cfg *internal.Config) error {
 func (s *Server) cleanup() {
 	for {
 		if _, err := s.sessions.EndExpired(); err != nil {
-			log.Printf("cleanup sessions: %v", err)
+			slog.Error("cleanup: sessions", "error", err)
 		}
 		if _, err := s.authHandler.DeleteOldRequests(); err != nil {
-			log.Printf("cleanup sign-in requests: %v", err)
+			slog.Error("cleanup: sign-in requests", "error", err)
 		}
 		time.Sleep(cleanupInterval)
 	}
@@ -193,38 +185,42 @@ func newRequestID() string {
 	return strconv.FormatInt(internal.NewID(), 10)
 }
 
-// logMethod writes the method padded to 7 characters (OPTIONS is the longest), so the
-// columns after it line up, like ${status} and ${latency} do. Colors match Fiber's own
-// ${method}; Fiber turns them on because Output is the default os.Stdout.
-func logMethod(output logger.Buffer, c *fiber.Ctx, _ *logger.Data, _ string) (int, error) {
-	colors := c.App().Config().ColorScheme
-	return fmt.Fprintf(output, "%s%-7s%s", methodColor(c.Method(), colors), c.Method(), colors.Reset)
-}
-
-// logIP writes the client IP padded to 15 characters, the longest IPv4 address, so the
-// columns after it line up. IPv6 addresses are longer and push the line.
-func logIP(output logger.Buffer, c *fiber.Ctx, _ *logger.Data, _ string) (int, error) {
-	return fmt.Fprintf(output, "%-15s", c.IP())
-}
-
-// logPath writes the path padded to 36 characters, enough for most API paths.
-// Longer ones (e.g. /api/v1/admin/users/{id}/sessions/{sid}) push the line; they are not cut.
-func logPath(output logger.Buffer, c *fiber.Ctx, _ *logger.Data, _ string) (int, error) {
-	return fmt.Fprintf(output, "%-36s", c.Path())
-}
-
-// logErrorOrSize writes the error in red like Fiber's ${error}; on success it writes the
-// response body size instead of "-", to compare requests. The logger runs before compress,
-// so it is the compressed size, the bytes that went over the wire.
-func logErrorOrSize(output logger.Buffer, c *fiber.Ctx, data *logger.Data, _ string) (int, error) {
-	if data.ChainErr != nil {
-		colors := c.App().Config().ColorScheme
-		return fmt.Fprintf(output, "%s%s%s", colors.Red, data.ChainErr.Error(), colors.Reset)
+// logRequest writes one line per request (docs/DECISION.md #26). It logs c.Path(), never
+// the query string: the sign-in link carries its token there. Headers and bodies are not
+// logged either (cookies, tokens, emails). Like Fiber's logger it runs the error handler
+// itself, so the line shows the status the client gets; 5xx is logged as an error.
+func logRequest(c *fiber.Ctx) error {
+	start := time.Now()
+	err := c.Next()
+	if err != nil {
+		if herr := c.App().ErrorHandler(c, err); herr != nil {
+			_ = c.SendStatus(fiber.StatusInternalServerError)
+		}
 	}
-	return output.WriteString(formatSize(responseSize(c)))
+
+	status := c.Response().StatusCode()
+	attrs := []slog.Attr{
+		slog.Any("request_id", c.Locals(requestid.ConfigDefault.ContextKey)),
+		slog.String("method", c.Method()),
+		slog.String("path", c.Path()),
+		slog.Int("status", status),
+		slog.Float64("duration_ms", float64(time.Since(start).Microseconds())/1000),
+		slog.String("ip", c.IP()),
+		slog.Int("bytes", responseSize(c)),
+	}
+	level := slog.LevelInfo
+	if err != nil {
+		attrs = append(attrs, slog.String("error", err.Error()))
+	}
+	if status >= fiber.StatusInternalServerError {
+		level = slog.LevelError
+	}
+	slog.LogAttrs(c.UserContext(), level, "request", attrs...)
+	return nil
 }
 
-// responseSize is the body size that is actually sent; -1 when it is unknown.
+// responseSize is the body size that is actually sent; -1 when it is unknown. The logger
+// runs before compress, so it is the compressed size, the bytes that went over the wire.
 func responseSize(c *fiber.Ctx) int {
 	res := c.Response()
 	status := res.StatusCode()
@@ -239,41 +235,6 @@ func responseSize(c *fiber.Ctx) int {
 	return len(res.Body())
 }
 
-func formatSize(n int) string {
-	switch {
-	case n < 0:
-		return "stream"
-	case n < 1<<10:
-		return fmt.Sprintf("%dB", n)
-	case n < 1<<20:
-		return fmt.Sprintf("%.1fKB", float64(n)/(1<<10))
-	default:
-		return fmt.Sprintf("%.1fMB", float64(n)/(1<<20))
-	}
-}
-
-// methodColor is a copy of Fiber's unexported logger.methodColor.
-func methodColor(method string, colors fiber.Colors) string {
-	switch method {
-	case fiber.MethodGet:
-		return colors.Cyan
-	case fiber.MethodPost:
-		return colors.Green
-	case fiber.MethodPut:
-		return colors.Yellow
-	case fiber.MethodDelete:
-		return colors.Red
-	case fiber.MethodPatch:
-		return colors.White
-	case fiber.MethodHead:
-		return colors.Magenta
-	case fiber.MethodOptions:
-		return colors.Blue
-	default:
-		return colors.Reset
-	}
-}
-
 func proxyHeader(trust bool) string {
 	if trust {
 		return fiber.HeaderXForwardedFor
@@ -285,11 +246,10 @@ func errorHandler(c *fiber.Ctx, err error) error {
 	code := fiber.StatusInternalServerError
 	msg := "internal server error"
 
+	// Other errors are not shown to the client; logRequest logs them.
 	var fe *fiber.Error
 	if errors.As(err, &fe) {
 		code, msg = fe.Code, fe.Message
-	} else {
-		log.Printf("error: %v", err)
 	}
 	return c.Status(code).JSON(fiber.Map{"error": msg})
 }

@@ -8,6 +8,7 @@ import (
 // configKeys are every variable LoadConfig reads.
 var configKeys = []string{
 	"APP_ENV", "APP_HOST", "APP_PORT", "CONFIG_FILE", "PUBLIC_URL", "TRUST_PROXY",
+	"LOG_FORMAT", "LOG_LEVEL",
 	"DATABASE_URL", "MIGRATIONS_DIR", "JWT_PRIVATE_KEY_PATH", "JWT_ISSUER",
 	"SWAGGER_UI_ENABLED", "SWAGGER_UI_DIR", "OPENAPI_FILE", "SIGN_IN_REDIRECT_URL",
 	"INITIAL_ADMIN_EMAIL", "INITIAL_ADMIN_NAME",
@@ -46,10 +47,13 @@ func TestLoadConfigDefaults(t *testing.T) {
 	if cfg.InitialAdminEmail != "admin@localhost" {
 		t.Errorf("InitialAdminEmail = %q", cfg.InitialAdminEmail)
 	}
+	if cfg.LogFormat != LogFormatText || cfg.LogLevel != "info" {
+		t.Errorf("log %s/%s, want text/info in dev", cfg.LogFormat, cfg.LogLevel)
+	}
 }
 
 func TestLoadConfigTestEnv(t *testing.T) {
-	setEnv(t, map[string]string{"APP_ENV": EnvTest})
+	setEnv(t, map[string]string{"APP_ENV": EnvTest, "SMTP_HOST": "localhost"})
 	cfg, err := LoadConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -59,6 +63,9 @@ func TestLoadConfigTestEnv(t *testing.T) {
 	}
 	if !cfg.SwaggerUI {
 		t.Error("SwaggerUI is off in test")
+	}
+	if cfg.LogFormat != LogFormatJSON {
+		t.Errorf("LogFormat = %q, want json outside dev", cfg.LogFormat)
 	}
 }
 
@@ -105,6 +112,9 @@ func TestLoadConfigRejects(t *testing.T) {
 		"bad trust proxy":   {map[string]string{"TRUST_PROXY": "yes please"}, "TRUST_PROXY"},
 		"bad swagger flag":  {map[string]string{"SWAGGER_UI_ENABLED": "on"}, "SWAGGER_UI_ENABLED"},
 		"prod without smtp": {map[string]string{"APP_ENV": EnvProd}, "SMTP_HOST"},
+		"test without smtp": {map[string]string{"APP_ENV": EnvTest}, "SMTP_HOST"},
+		"bad log format":    {map[string]string{"LOG_FORMAT": "yaml"}, "LOG_FORMAT"},
+		"bad log level":     {map[string]string{"LOG_LEVEL": "verbose"}, "LOG_LEVEL"},
 		"prod with swagger": {map[string]string{"APP_ENV": EnvProd, "SMTP_HOST": "smtp", "SWAGGER_UI_ENABLED": "true"}, "SWAGGER_UI_ENABLED"},
 	} {
 		t.Run(name, func(t *testing.T) {

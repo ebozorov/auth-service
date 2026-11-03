@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -57,7 +57,7 @@ type DynamicConfig struct {
 func LoadDynamic(path string) (*DynamicConfig, error) {
 	d, err := readDynamic(path)
 	if errors.Is(err, fs.ErrNotExist) {
-		log.Printf("dynamic config: %s yo'q, standart qiymatlar olinadi", path)
+		slog.Warn("dynamic config: fayl yo'q, standart qiymatlar olinadi", "path", path)
 		def := DefaultDynamic()
 		d, err = &def, nil
 	}
@@ -104,7 +104,7 @@ func (c *DynamicConfig) Watch() error {
 				if !ok {
 					return
 				}
-				log.Printf("dynamic config: watch: %v", err)
+				slog.Error("dynamic config: watch", "error", err)
 			}
 		}
 	}()
@@ -115,12 +115,12 @@ func (c *DynamicConfig) Watch() error {
 func (c *DynamicConfig) reload() {
 	d, err := readDynamic(c.path)
 	if err != nil {
-		log.Printf("dynamic config: %v; eski qiymatlar qoldi", err)
+		slog.Error("dynamic config: o'qilmadi, eski qiymatlar qoldi", "path", c.path, "error", err)
 		return
 	}
 	old := c.current.Swap(d)
 	for _, change := range diffDynamic(*old, *d) {
-		log.Printf("dynamic config: %s", change)
+		slog.Info("dynamic config: o'zgardi", "change", change)
 	}
 }
 

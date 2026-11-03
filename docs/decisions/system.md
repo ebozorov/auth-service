@@ -39,7 +39,7 @@ Barcha limitlar env orqali sozlanadi. Sozlanmagan bo'lsa, quyidagi standart qiym
 ## 13. Email: SMTP orqali, auth-service'ning o'zi yuboradi
 
 - Xatni auth-service'ning o'zi yuboradi, broker yoki alohida mail servis ishlatilmaydi. SMTP sozlamalari env orqali beriladi: `SMTP_HOST`, `SMTP_PORT` (`587`), `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`.
-- `SMTP_HOST` bo'sh bo'lsa (dev/test), xat yuborilmaydi, link logga yoziladi. `prod` da `SMTP_HOST` majburiy.
+- `SMTP_HOST` bo'sh bo'lsa, xat yuborilmaydi, link logga yoziladi. Bunga faqat `dev` da ruxsat bor: link bir martalik parol, logi esa boshqa joyga yig'ilishi mumkin (26-qaror). `test` va `prod` da `SMTP_HOST` majburiy, testlar Mailpit ishlatadi.
 - Xat fonda yuboriladi, shunda javob vaqtidan email tizimda bor-yo'qligini bilib bo'lmaydi.
 
 ## 14. ID: Sonyflake
@@ -65,7 +65,7 @@ Barcha limitlar env orqali sozlanadi. Sozlanmagan bo'lsa, quyidagi standart qiym
 |---|---|---|
 | `dev` | lokal ishlab chiqish (`make start`) | `config/.env.local` fayli (`make` yuklaydi): o'zimiz ko'rsatgan servislar (Postgres, SMTP). Dinamik sozlamalar: `config/config.yaml` (25-qaror) |
 | `test` | avtomatik testlar (`make test`) | `config/.env.local` yuklanmaydi, hammasi localhost. Integration testlarga kerakli servislarni testcontainers ko'taradi |
-| `prod` | Kubernetes, tafsilotlari hali aniqlanmagan | container environment. Prod tekshiruvlari himoya sifatida qoladi: Swagger taqiqlangan, `SMTP_HOST` majburiy |
+| `prod` | Kubernetes, tafsilotlari hali aniqlanmagan | container environment. Prod tekshiruvlari himoya sifatida qoladi: Swagger taqiqlangan, `SMTP_HOST` majburiy (u `test` da ham majburiy, 13-qaror) |
 
 - `make test` hech qanday env faylga bog'liq emas va dev bazasiga ulanmaydi.
 - Server env fayl o'qimaydi. Repoda faqat `config/.env.local` (lokal dev sozlamalari) saqlanadi, uni `make` yuklaydi. `.env` fayli ishlatilmaydi. Server o'zi o'qiydigan yagona fayl — dinamik sozlamalar fayli (25-qaror).
@@ -139,6 +139,21 @@ Ba'zi sozlamalarni server qayta ishga tushmasdan o'zgartirish kerak, masalan huj
 - **O'zgarish faqat yangi narsalarga ta'sir qiladi:** muddat yaratilishda hisoblanadi (`expires_at`, token `exp`). `access_token_ttl` yoki `refresh_token_ttl` o'zgarsa, mavjud token va sessionlar eski muddat bilan qoladi. Limit va oyna o'zgarishi keyingi tekshiruvdan boshlab kuchga kiradi.
 - **Kutubxona:** `fsnotify` va `gopkg.in/yaml.v3`, loader o'zimizniki. `viper`/`koanf` ishlatilmaydi: sozlamalar soni kam va `internal/config.go` allaqachon qo'lda yozilgan.
 - **Prod:** fayl Kubernetes ConfigMap'dan papka sifatida ulanadi (`subPath` bilan emas, aks holda fayl yangilanmaydi). ConfigMap o'zgargach, kubelet faylni ~1 daqiqa ichida yangilaydi. Har bir pod faylni o'zi qayta o'qiydi, shuning uchun podlar qisqa vaqt turli qiymatda ishlashi mumkin. Bu qabul qilingan.
+
+## 26. Loglar: `slog`, strukturali, secretlarsiz
+
+Loglar keyinchalik Loki kabi tizimga yig'iladi va boshqa odamlar ham o'qiydi. Shuning uchun ular mashina o'qiy oladigan formatda bo'ladi va ularga secret tushmaydi.
+
+- **Kutubxona:** standart `log/slog`. `main` uni `slog.SetDefault` qiladi, shunda standart `log` paketi ham shu handler orqali yozadi. GORM o'zining `logger.NewSlogLogger` adapteri orqali ulanadi. Tashqi logger (zap, zerolog) kerak emas.
+- **Format:** `LOG_FORMAT` — `text` yoki `json`. Standart qiymat `dev` da `text` (terminalda o'qish uchun), `test` va `prod` da `json` (log yig'uvchi uchun). `LOG_LEVEL` — `debug`, `info` (standart), `warn`, `error`. Ikkalasi ham statik sozlama.
+- **Request logi:** har bir so'rovga bitta `request` yozuvi: `request_id`, `method`, `path`, `status`, `duration_ms`, `ip`, `bytes`, `error`. 5xx `ERROR` darajasida, qolgani `INFO`. Middleware xato handler'ni o'zi chaqiradi, shuning uchun yozuvdagi status client olgan status bilan bir xil. `recover` logger'dan keyin turadi, shunda panic ham shu yozuvga tushadi. Ichki xatolar client'ga ko'rsatilmaydi, faqat shu yozuvda bo'ladi.
+- **Logga yozilmaydi:**
+  - **Query string.** Sign-in linkining tokeni query'da keladi, shuning uchun faqat `c.Path()` yoziladi.
+  - **Header va body:** cookie, `Authorization`, refresh token, device secret, request body ichidagi email.
+  - **Email manzili.** Xatolarda `user_id` yoziladi. Manzil kerak bo'lsa (birinchi admin), `internal.MaskEmail` bilan: `b***@example.com`.
+  - **SQL parametrlari.** GORM sekin yoki xato query'ni parametrsiz yozadi (`ParameterizedQueries`): unda email, IP va token hash'lari bo'ladi.
+- **Istisno — dev'da xat matni.** `SMTP_HOST` bo'sh bo'lsa, xat (link bilan) logga `WARN` bo'lib yoziladi. Config buni faqat `dev` da ruxsat beradi (13-qaror).
+- **Keyingi qadam:** OpenTelemetry qo'shilganda loglarga `trace_id` va `span_id` qo'shiladi. Shuning uchun so'rov ichidagi loglar context bilan yoziladi (`slog.LogAttrs(c.UserContext(), ...)`).
 
 ## Ochiq savollar
 

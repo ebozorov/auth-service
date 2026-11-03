@@ -50,6 +50,7 @@ Qarorlar kategoriya bo'yicha [`decisions/`](decisions/) papkasida yuritiladi. Bu
 | 23 | Dashboard ma'lumotlari materialized view'da | [database](decisions/database.md) |
 | 24 | Rollar va permissionlar: rol hardcoded, `admin` o'zgartiradi, `user` faqat o'qiydi; permissionlar boshqa servisda | [database](decisions/database.md) |
 | 25 | Dinamik sozlamalar: fayl va qayta yuklash | [system](decisions/system.md) |
+| 26 | Loglar: `slog`, strukturali, secretlarsiz | [system](decisions/system.md) |
 
 ## Ochiq savollar
 

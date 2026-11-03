@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,12 +13,19 @@ import (
 func main() {
 	cfg, err := internal.LoadConfig()
 	if err != nil {
-		log.Fatalf("config: %v", err)
+		fatal("config", err)
 	}
+
+	// From here every log line, the standard log package's too, goes through this logger.
+	logger, err := internal.NewLogger(os.Stdout, cfg.LogFormat, cfg.LogLevel)
+	if err != nil {
+		fatal("logger", err)
+	}
+	slog.SetDefault(logger)
 
 	server, err := app.New(cfg)
 	if err != nil {
-		log.Fatal(err)
+		fatal("server", err)
 	}
 
 	go func() {
@@ -29,15 +36,26 @@ func main() {
 	}()
 
 	base := cfg.BaseURL()
-	log.Printf("%s %s (%s) ishlayapti: %s", app.Name, app.Version, cfg.Env, base)
-	// make dev: PUBLIC_URL is the Vite dev server, the embedded web/dist on base is stale there.
-	log.Printf("web: %s/", cfg.PublicURL)
-	log.Printf("api: %s%s/", base, internal.APIPrefix)
-	if cfg.SwaggerUI {
-		log.Printf("swagger ui: %s/swagger-ui/", base)
+	attrs := []any{
+		"version", app.Version,
+		"env", cfg.Env,
+		"url", base,
+		// make dev: PUBLIC_URL is the Vite dev server, the embedded web/dist on base is stale there.
+		"web", cfg.PublicURL + "/",
+		"api", base + internal.APIPrefix + "/",
 	}
+	if cfg.SwaggerUI {
+		attrs = append(attrs, "swagger_ui", base+"/swagger-ui/")
+	}
+	slog.Info(app.Name+" ishlayapti", attrs...)
 
 	if err := server.Listen(); err != nil {
-		log.Fatalf("server: %v", err)
+		fatal("server", err)
 	}
+}
+
+// fatal logs the error and exits. Before SetDefault it goes to slog's default text output.
+func fatal(msg string, err error) {
+	slog.Error(msg, "error", err)
+	os.Exit(1)
 }

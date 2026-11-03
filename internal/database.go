@@ -3,8 +3,7 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"log"
-	"os"
+	"log/slog"
 	"path/filepath"
 	"time"
 
@@ -18,11 +17,13 @@ import (
 
 func ConnectDB(url string) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(url), &gorm.Config{
-		Logger: logger.New(log.New(os.Stdout, "", log.LstdFlags), logger.Config{
+		Logger: logger.NewSlogLogger(slog.Default(), logger.Config{
 			SlowThreshold: 200 * time.Millisecond,
 			LogLevel:      logger.Warn,
 			// "Not found" is a normal answer (e.g. unknown email), not a problem.
 			IgnoreRecordNotFoundError: true,
+			// Slow and failed queries are logged without their values: emails, IPs, token hashes (#26).
+			ParameterizedQueries: true,
 		}),
 		// Turns unique violations into gorm.ErrDuplicatedKey.
 		TranslateError: true,

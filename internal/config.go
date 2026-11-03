@@ -26,6 +26,10 @@ type Config struct {
 	PublicURL  string
 	TrustProxy bool
 
+	// log
+	LogFormat string
+	LogLevel  string
+
 	// db
 	DatabaseURL   string
 	MigrationsDir string
@@ -71,6 +75,8 @@ func LoadConfig() (*Config, error) {
 		ConfigFile: getEnv("CONFIG_FILE", "config/config.yaml"),
 		TrustProxy: boolean("TRUST_PROXY", "false"),
 
+		LogLevel: getEnv("LOG_LEVEL", "info"),
+
 		DatabaseURL:   getEnv("DATABASE_URL", "postgres://auth:auth@localhost:5433/auth?sslmode=disable"),
 		MigrationsDir: getEnv("MIGRATIONS_DIR", "migrations"),
 
@@ -98,6 +104,19 @@ func LoadConfig() (*Config, error) {
 		errs = append(errs, fmt.Errorf("APP_ENV: must be one of %s, %s, %s", EnvDev, EnvTest, EnvProd))
 	}
 
+	// Text is easier to read in a terminal; elsewhere logs go to a collector (docs/DECISION.md #26).
+	logFormat := LogFormatJSON
+	if cfg.Env == EnvDev {
+		logFormat = LogFormatText
+	}
+	cfg.LogFormat = getEnv("LOG_FORMAT", logFormat)
+	if err := checkLogFormat(cfg.LogFormat); err != nil {
+		errs = append(errs, fmt.Errorf("LOG_FORMAT: %w", err))
+	}
+	if _, err := parseLogLevel(cfg.LogLevel); err != nil {
+		errs = append(errs, fmt.Errorf("LOG_LEVEL: %w", err))
+	}
+
 	// Swagger UI is for dev/test only: on by default there, never allowed in prod.
 	cfg.SwaggerUI = boolean("SWAGGER_UI_ENABLED", strconv.FormatBool(cfg.Env != EnvProd))
 	if cfg.SwaggerUI && cfg.Env == EnvProd {
@@ -111,9 +130,10 @@ func LoadConfig() (*Config, error) {
 	}
 	cfg.InitialAdminEmail = getEnv("INITIAL_ADMIN_EMAIL", initialAdminEmail)
 
-	// Without SMTP, sign-in links are only written to the log. Fine for dev, never for prod.
-	if cfg.SMTPHost == "" && cfg.Env == EnvProd {
-		errs = append(errs, fmt.Errorf("SMTP_HOST: required when APP_ENV=%s", EnvProd))
+	// Without SMTP, sign-in links are only written to the log. A link is a one-time password,
+	// so this is allowed only in dev, where the log stays on the developer's machine (#13, #26).
+	if cfg.SMTPHost == "" && cfg.Env != EnvDev {
+		errs = append(errs, fmt.Errorf("SMTP_HOST: required unless APP_ENV=%s", EnvDev))
 	}
 
 	if len(errs) > 0 {
