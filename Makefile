@@ -50,7 +50,8 @@ build-image:
 
 # Release arxivlari $(RELEASE_DIR)/ ga: har arxitektura uchun statik binary (CGO o'chiq) va
 # runtime fayllar (Docker image'dagi bilan bir xil). Fayl nomida versiya yo'q, shuning uchun
-# /releases/latest/download/<fayl> linki doimiy. Har arxiv yonida <arxiv>.sha256 (sha256sum -c bilan tekshiriladi).
+# /releases/latest/download/<fayl> linki doimiy. checksums.txt — barcha arxivlarning sha256 qiymati
+# (sha256sum formati, sha256sum -c --ignore-missing bilan tekshiriladi).
 release: web-build
 	@rm -rf $(RELEASE_DIR) && mkdir -p $(RELEASE_DIR)
 	@for t in $(RELEASE_TARGETS); do \
@@ -60,9 +61,9 @@ release: web-build
 			go build -trimpath -ldflags="-s -w" -o $$dir/$(IMAGE) ./cmd/server && \
 		cp -r migrations $$dir/ && cp docs/openapi.json $$dir/docs/ && cp config/config.yaml $$dir/config/ && \
 		tar -czf $$dir.tar.gz -C $(RELEASE_DIR) $$name && rm -rf $$dir && \
-		(cd $(RELEASE_DIR) && sha256sum $$name.tar.gz > $$name.tar.gz.sha256) && \
 		echo "$(RELEASE_DIR)/$$name.tar.gz" || exit 1; \
 	done
+	@cd $(RELEASE_DIR) && sha256sum *.tar.gz > checksums.txt
 
 version:
 	@echo $(VERSION)
