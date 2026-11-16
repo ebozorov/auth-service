@@ -1,0 +1,68 @@
+name: Build
+
+# main dagi Test workflow muvaffaqiyatli tugagach ishlaydi: linux amd64 va arm64 uchun
+# build va GitHub Release. Tag internal/app/app.go dagi Version dan olinadi (v0.3.0).
+# Bunday release allaqachon bo'lsa (Version oshirilmagan), build faqat artifact sifatida
+# saqlanadi, release yaratilmaydi.
+on:
+  workflow_run:
+    workflows: [Test]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      # Testdan o'tgan aynan o'sha commit
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Versiya
+        id: version
+        run: |
+          tag="v$(make -s version)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::$tag release allaqachon bor. Yangi release uchun internal/app/app.go dagi Version ni oshiring."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # web/dist binary ichiga embed qilinadi, make release avval web build qiladi
+      - run: make web-install release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: auth-service-${{ steps.version.outputs.tag }}-${{ github.event.workflow_run.head_sha }}
+          path: dist/
+          retention-days: 14
+
+      - name: Release
+        if: steps.version.outputs.exists == 'false'
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" dist/* \
+            --target "$SHA" \
+            --title "${{ steps.version.outputs.tag }}" \
+            --generate-notes

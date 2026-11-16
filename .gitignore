@@ -1,5 +1,6 @@
 # Build natijalari (make build, go test -c)
 /bin/
+/dist/
 *.exe
 *.exe~
 *.dll
