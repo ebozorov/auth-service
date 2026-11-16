@@ -19,8 +19,14 @@ KEYS_DIR    := $(dir $(PRIVATE_KEY))
 COMPOSE_FILE     := docker/compose.yaml
 COMPOSE_APP_FILE := docker/compose.app.yaml
 
+# Versiya bitta joyda: internal/app/app.go dagi Version. Image tegi va release nomi shundan olinadi.
+VERSION   := $(shell sed -n 's/^[[:space:]]*Version[[:space:]]*= "\(.*\)"/\1/p' internal/app/app.go)
 IMAGE     := auth-service
-IMAGE_TAG := $(shell sed -n 's/^[[:space:]]*Version[[:space:]]*= "\(.*\)"/\1/p' internal/app/app.go)
+IMAGE_TAG := $(VERSION)
+
+# make release: linux arxitekturalari (GOARCH nomlari)
+RELEASE_DIR     := dist
+RELEASE_TARGETS := amd64 arm64
 
 # Vite dev server manzili (web/vite.config.ts dagi port bilan bir xil)
 WEB_DEV_URL := http://localhost:5173
@@ -32,7 +38,7 @@ SWAGGER_UI_FILES     := index.html index.css swagger-ui.css swagger-ui-bundle.js
 
 RUNNING := [ -f $(PID_FILE) ] && kill -0 $$(cat $(PID_FILE)) 2>/dev/null
 
-.PHONY: build build-image compose-up compose-down dev start stop reload status services-up services-down services-status keys swagger-ui web-install web-dev web-build web-types web-test test check
+.PHONY: build build-image release version compose-up compose-down dev start stop reload status services-up services-down services-status keys swagger-ui web-install web-dev web-build web-types web-test test check
 
 # web/dist binary ichiga embed qilinadi, shuning uchun avval web build bo'ladi
 build: web-build
@@ -41,6 +47,25 @@ build: web-build
 # Docker image: docker/Dockerfile, context — repo ildizi. Teglar: versiya (internal/app/app.go) va latest.
 build-image:
 	docker build -f docker/Dockerfile -t $(IMAGE):$(IMAGE_TAG) -t $(IMAGE):latest .
+
+# Release arxivlari $(RELEASE_DIR)/ ga: har arxitektura uchun statik binary (CGO o'chiq) va
+# runtime fayllar (Docker image'dagi bilan bir xil). Fayl nomida versiya yo'q, shuning uchun
+# /releases/latest/download/<fayl> linki doimiy. Har arxiv yonida <arxiv>.sha256 (sha256sum -c bilan tekshiriladi).
+release: web-build
+	@rm -rf $(RELEASE_DIR) && mkdir -p $(RELEASE_DIR)
+	@for t in $(RELEASE_TARGETS); do \
+		name=$(IMAGE)_linux_$$t; dir=$(RELEASE_DIR)/$$name; \
+		mkdir -p $$dir/docs $$dir/config && \
+		CGO_ENABLED=0 GOOS=linux GOARCH=$$t \
+			go build -trimpath -ldflags="-s -w" -o $$dir/$(IMAGE) ./cmd/server && \
+		cp -r migrations $$dir/ && cp docs/openapi.json $$dir/docs/ && cp config/config.yaml $$dir/config/ && \
+		tar -czf $$dir.tar.gz -C $(RELEASE_DIR) $$name && rm -rf $$dir && \
+		(cd $(RELEASE_DIR) && sha256sum $$name.tar.gz > $$name.tar.gz.sha256) && \
+		echo "$(RELEASE_DIR)/$$name.tar.gz" || exit 1; \
+	done
+
+version:
+	@echo $(VERSION)
 
 keys: $(PRIVATE_KEY)
 
