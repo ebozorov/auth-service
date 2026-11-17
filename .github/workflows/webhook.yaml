@@ -5,7 +5,7 @@ name: Webhook
 # bilan bir xil payload (action, release, repository, sender) POST qiladi.
 # Version oshirilmagan bo'lsa (release yaratilmagan), hech narsa yuborilmaydi.
 #
-# Kerakli secret'lar: WEBHOOK_URL (path bilan to'liq manzil), WEBHOOK_API_KEY.
+# Kerakli sozlamalar: WEBHOOK_URL variable (path bilan to'liq manzil), WEBHOOK_API_KEY secret.
 #
 # Eslatma: GITHUB_TOKEN bilan yaratilgan release "on: release" workflow'larini ishga
 # tushirmaydi, shuning uchun workflow_run ishlatilgan.
@@ -25,7 +25,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       SHA: ${{ github.event.workflow_run.head_sha }}
-      WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+      WEBHOOK_URL: ${{ vars.WEBHOOK_URL }}
       WEBHOOK_API_KEY: ${{ secrets.WEBHOOK_API_KEY }}
     steps:
       - name: Release
@@ -48,7 +48,7 @@ jobs:
         if: steps.release.outputs.found == 'true'
         run: |
           if [ -z "$WEBHOOK_URL" ]; then
-            echo "::warning::WEBHOOK_URL secret o'rnatilmagan, webhook yuborilmadi."
+            echo "::warning::WEBHOOK_URL variable o'rnatilmagan, webhook yuborilmadi."
             exit 0
           fi
 
