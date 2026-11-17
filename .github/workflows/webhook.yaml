@@ -1,0 +1,72 @@
+name: Webhook
+
+# Build workflow muvaffaqiyatli tugagach ishlaydi va shu commit uchun yangi GitHub Release
+# yaratilgan bo'lsa, webhook-listener'ga GitHub'ning o'zi yuboradigan "release" webhook'i
+# bilan bir xil payload (action, release, repository, sender) POST qiladi.
+# Version oshirilmagan bo'lsa (release yaratilmagan), hech narsa yuborilmaydi.
+#
+# Kerakli sozlamalar: WEBHOOK_URL variable (path bilan to'liq manzil), WEBHOOK_API_KEY secret.
+#
+# Eslatma: GITHUB_TOKEN bilan yaratilgan release "on: release" workflow'larini ishga
+# tushirmaydi, shuning uchun workflow_run ishlatilgan.
+on:
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  webhook:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+      WEBHOOK_URL: ${{ vars.WEBHOOK_URL }}
+      WEBHOOK_API_KEY: ${{ secrets.WEBHOOK_API_KEY }}
+    steps:
+      - name: Release
+        id: release
+        run: |
+          # Build release'ni --target "$SHA" bilan yaratadi, shu commit'ga tegishlisini qidiramiz
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=30" \
+            | jq --arg sha "$SHA" 'map(select(.target_commitish == $sha and (.draft | not))) | first // empty' \
+            > release.json
+
+          if [ ! -s release.json ]; then
+            echo "::notice::$SHA uchun release yaratilmagan, webhook yuborilmaydi."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Release: $(jq -r .tag_name release.json)"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Webhook
+        if: steps.release.outputs.found == 'true'
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "::warning::WEBHOOK_URL variable o'rnatilmagan, webhook yuborilmadi."
+            exit 0
+          fi
+
+          jq -n \
+            --slurpfile release release.json \
+            --slurpfile event "$GITHUB_EVENT_PATH" \
+            '{action: "published", release: $release[0]}
+              + ($event[0] | {repository, organization, sender} | with_entries(select(.value != null)))' \
+            > payload.json
+
+          curl --fail-with-body --silent --show-error \
+            --retry 3 --retry-all-errors --max-time 30 \
+            -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-API-Key: $WEBHOOK_API_KEY" \
+            -H "X-GitHub-Event: release" \
+            -H "X-GitHub-Delivery: $(cat /proc/sys/kernel/random/uuid)" \
+            -H "X-GitHub-Hook-Installation-Target-Type: repository" \
+            -H "X-GitHub-Hook-Installation-Target-ID: ${{ github.repository_id }}" \
+            -H "User-Agent: GitHub-Hookshot/actions" \
+            --data-binary @payload.json
