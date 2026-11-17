@@ -26,7 +26,7 @@ import (
 
 const (
 	Name    = "auth-service"
-	Version = "0.3.1"
+	Version = "0.3.2"
 )
 
 // cleanupInterval is how often expired sessions and old sign-in requests are cleaned up.
