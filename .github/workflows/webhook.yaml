@@ -1,8 +1,8 @@
 name: Webhook
 
 # Build workflow muvaffaqiyatli tugagach ishlaydi va shu commit uchun yangi GitHub Release
-# yaratilgan bo'lsa, webhook-listener'ga GitHub'ning o'zi yuboradigan "release" webhook'i
-# bilan bir xil payload (action, release, repository, sender) POST qiladi.
+# yaratilgan bo'lsa, webhook-listener'ga signal sifatida minimal "release" payload'ini
+# (repository, release tag/url, commit SHA, asset'lar va ularning sha256 digest'lari) POST qiladi.
 # Version oshirilmagan bo'lsa (release yaratilmagan), hech narsa yuborilmaydi.
 #
 # Kerakli sozlamalar: WEBHOOK_URL variable (path bilan to'liq manzil), WEBHOOK_API_KEY secret.
@@ -52,12 +52,22 @@ jobs:
             exit 0
           fi
 
-          jq -n \
-            --slurpfile release release.json \
-            --slurpfile event "$GITHUB_EVENT_PATH" \
-            '{action: "published", release: $release[0]}
-              + ($event[0] | {repository, organization, sender} | with_entries(select(.value != null)))' \
-            > payload.json
+          # Signal uchun minimal payload: GitHub release webhook'i maydon nomlari saqlangan,
+          # lekin faqat kerakli qismi. Asset digest'lari "sha256:<hex>" ko'rinishida.
+          jq \
+            --arg repo "$GITHUB_REPOSITORY" \
+            --arg repo_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            '{
+              action: "published",
+              repository: {full_name: $repo, html_url: $repo_url},
+              release: {
+                tag_name,
+                html_url,
+                url,
+                target_commitish,
+                assets: [.assets[] | {name, browser_download_url, digest}]
+              }
+            }' release.json > payload.json
 
           curl --fail-with-body --silent --show-error \
             --retry 3 --retry-all-errors --max-time 30 \
